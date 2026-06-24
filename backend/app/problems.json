@@ -1,0 +1,44 @@
+[
+  {
+    "id": "two-sum",
+    "title": "Two Sum",
+    "description": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
+    "time_limit": 2.0,
+    "memory_limit": 256
+  },
+  {
+    "id": "reverse-string",
+    "title": "Reverse String",
+    "description": "Write a function that reverses a string. The input string is given as an array of characters s.",
+    "time_limit": 2.0,
+    "memory_limit": 256
+  },
+  {
+    "id": "infinite-loop",
+    "title": "Infinite Loop Tester",
+    "description": "A program that loops infinitely. Used to verify Time Limit Exceeded (TLE) detection.",
+    "time_limit": 1.0,
+    "memory_limit": 256
+  },
+  {
+    "id": "fork-bomb",
+    "title": "Fork Bomb Tester",
+    "description": "A program that recursively spawns processes. Used to verify process limit (PID limit) constraints.",
+    "time_limit": 2.0,
+    "memory_limit": 256
+  },
+  {
+    "id": "memory-leak",
+    "title": "Memory Leak Tester",
+    "description": "A program that allocates large amounts of memory. Used to verify Memory Limit Exceeded (MLE) detection.",
+    "time_limit": 2.0,
+    "memory_limit": 256
+  },
+  {
+    "id": "runtime-error",
+    "title": "Runtime Error Tester",
+    "description": "A program that crashes or exits with a non-zero status code. Used to verify Runtime Error (RE) detection.",
+    "time_limit": 2.0,
+    "memory_limit": 256
+  }
+]

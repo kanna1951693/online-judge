@@ -1,0 +1,217 @@
+# ==============================================================================
+# Git Ignore Configuration - Sandboxed Online Judge Monorepo
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# OS and System Files
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ------------------------------------------------------------------------------
+# IDEs and Editors
+# ------------------------------------------------------------------------------
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*~
+
+# ------------------------------------------------------------------------------
+# Node/React (Frontend)
+# ------------------------------------------------------------------------------
+# Dependency directory
+frontend/node_modules/
+node_modules/
+
+# Production build output
+frontend/dist/
+frontend/build/
+dist/
+build/
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Next.js/Vite cache and local configs
+frontend/.next/
+frontend/.svelte-kit/
+frontend/.turbo/
+.eslintcache
+.parcel-cache
+
+# ------------------------------------------------------------------------------
+# Python/FastAPI (Backend & Sandbox)
+# ------------------------------------------------------------------------------
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these written in a common folder, but ignore just in case
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit testing / coverage reports
+htmlcov/
+.tox/
+.nosenv/
+.pytest_cache/
+. Moffat_cache/
+.checks/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.run/
+
+# Translations
+*.mo
+*.pot
+
+# Django/Flask/FastAPI databases (if using SQLite locally)
+*.sqlite3
+*.db
+backend/*.db
+backend/*.sqlite3
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# PEP 582 project packages
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath Parsed Files
+*.sage.py
+
+# Environments (Virtualenvs)
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+backend/venv/
+backend/.venv/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pyenv
+.python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include pipenv lock file in version control.
+#   However, if you want to ignore it, uncomment the next line:
+#Pipfile.lock
+
+# poetry
+#   Similar to pipenv, poetry.lock is generally committed.
+#   Uncomment if you want to ignore:
+#poetry.lock
+
+# ------------------------------------------------------------------------------
+# Docker & Infrastructure
+# ------------------------------------------------------------------------------
+# Redis dump data (if mapping local directory)
+*.rdb
+dump.rdb
+redis_data/
+
+# Docker build/compose local overrides
+docker-compose.override.yml
+.docker/
+
+# ------------------------------------------------------------------------------
+# Secret & Environment Files
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.local
+backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local

@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+redis
+docker
+pydantic
+pydantic-settings
+python-multipart
+pytest
+httpx

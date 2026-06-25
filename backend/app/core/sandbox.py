@@ -89,7 +89,7 @@ class SandboxExecutor:
             return False
 
         if self.language == "cpp":
-            compiler_image = "frolvlad/alpine-gxx"
+            compiler_image = "apexjudge-gxx:latest"
             compile_cmd = "g++ -O3 -static -I/app /app/solution.cpp -o /app/solution"
         elif self.language == "java":
             compiler_image = "eclipse-temurin:17-jdk"

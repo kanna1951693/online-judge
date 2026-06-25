@@ -30,6 +30,16 @@ services:
     networks:
       - apexjudge-net
 
+  cpp-compiler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.gxx
+    image: apexjudge-gxx:latest
+    container_name: apexjudge-cpp-compiler
+    entrypoint: ["echo", "C++ compiler image built successfully"]
+    networks:
+      - apexjudge-net
+
   backend:
     build:
       context: ./backend
@@ -44,12 +54,14 @@ services:
       - "8000:8000"
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - DATABASE_URL=postgresql+psycopg2://apexjudge:apexjudge_secret@postgres:5432/apexjudge
+      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg2://apexjudge:apexjudge_secret@postgres:5432/apexjudge}
       - PROBLEMS_JSON_PATH=/app/backend/app/problems.json
       - PROBLEMS_DIR=/app/backend/problems
       - DOCKER_HOST=unix:///var/run/docker.sock
       - SUPABASE_URL=${SUPABASE_URL:-}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-}
+      - HOST_WORKSPACE_PATH=${PWD}
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock
@@ -57,6 +69,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_started
+      cpp-compiler:
         condition: service_started
     networks:
       - apexjudge-net
@@ -70,12 +84,14 @@ services:
     command: python -m backend.app.judge.grader
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - DATABASE_URL=postgresql+psycopg2://apexjudge:apexjudge_secret@postgres:5432/apexjudge
+      - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg2://apexjudge:apexjudge_secret@postgres:5432/apexjudge}
       - PROBLEMS_JSON_PATH=/app/backend/app/problems.json
       - PROBLEMS_DIR=/app/backend/problems
       - DOCKER_HOST=unix:///var/run/docker.sock
       - SUPABASE_URL=${SUPABASE_URL:-}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-}
+      - HOST_WORKSPACE_PATH=${PWD}
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock
@@ -83,6 +99,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_started
+      cpp-compiler:
         condition: service_started
     networks:
       - apexjudge-net

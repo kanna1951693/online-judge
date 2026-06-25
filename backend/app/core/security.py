@@ -49,33 +49,156 @@ def verify_access_token(token: str) -> Optional[str]:
 
 
 # ── FastAPI dependencies ─────────────────────────────────────────────────────
+import hashlib
+import re
+from sqlalchemy import func
+
 bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def _generate_profile_hash(user_id: str) -> str:
+    """Create a deterministic profile hash from the user ID."""
+    return hashlib.sha256(user_id.encode()).hexdigest()[:32]
+
+
+def _unique_username(db: Session, preferred_name: str | None, email: str) -> str:
+    seed = preferred_name or email.split("@")[0] or "user"
+    base = re.sub(r"[^a-zA-Z0-9_]", "", seed).lower()[:50]
+    if len(base) < 3:
+        base = "user"
+
+    username = base
+    counter = 1
+    while db.scalar(select(User).where(User.username == username)):
+        suffix = str(counter)
+        username = f"{base[:64 - len(suffix)]}{suffix}"
+        counter += 1
+    return username
+
+
+def get_or_create_supabase_user(
+    db: Session,
+    supabase_uid: str,
+    email: str,
+    name: str,
+) -> User:
+    user = db.scalar(select(User).where(User.supabase_auth_id == supabase_uid))
+    if user:
+        return user
+
+    user = db.scalar(select(User).where(func.lower(User.email) == email))
+    if user:
+        if user.supabase_auth_id and user.supabase_auth_id != supabase_uid:
+            raise HTTPException(
+                status_code=409,
+                detail="This email is already linked to another Supabase identity.",
+            )
+        user.supabase_auth_id = supabase_uid
+        db.commit()
+        db.refresh(user)
+        return user
+
+    user_id = uuid.uuid4()
+    user = User(
+        id=user_id,
+        username=_unique_username(db, name, email),
+        email=email,
+        password_hash=None,
+        supabase_auth_id=supabase_uid,
+        profile_hash=_generate_profile_hash(str(user_id)),
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 def get_current_user(
     creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> User:
-    """Require authentication — raises 401 if missing/invalid."""
+    """Require authentication — raises 401 if missing/invalid. Supports local JWTs and Supabase Auth JWTs."""
     if not creds:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    user_id = verify_access_token(creds.credentials)
-    if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
-    user = db.scalar(select(User).where(User.id == uuid.UUID(user_id)))
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-    return user
+    
+    token = creds.credentials
+
+    # 1. Try local JWT
+    user_id = verify_access_token(token)
+    if user_id:
+        try:
+            user = db.scalar(select(User).where(User.id == uuid.UUID(user_id)))
+            if not user:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+            return user
+        except ValueError:
+            pass
+
+    # 2. Try Supabase JWT
+    if settings.SUPABASE_JWT_SECRET:
+        try:
+            payload = jwt.decode(
+                token,
+                settings.SUPABASE_JWT_SECRET,
+                algorithms=["HS256"],
+                options={"verify_aud": False}
+            )
+            email = payload.get("email")
+            supabase_uid = payload.get("sub")
+            if email and supabase_uid:
+                user_metadata = payload.get("user_metadata", {}) or {}
+                name = (
+                    user_metadata.get("full_name")
+                    or user_metadata.get("name")
+                    or user_metadata.get("preferred_username")
+                    or email.split("@")[0]
+                )
+                return get_or_create_supabase_user(db, supabase_uid, email, name)
+        except JWTError:
+            pass
+
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
 
 def get_optional_current_user(
     creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> Optional[User]:
-    """Optional authentication — returns None if not logged in."""
+    """Optional authentication — returns None if not logged in. Supports local JWTs and Supabase Auth JWTs."""
     if not creds:
         return None
-    user_id = verify_access_token(creds.credentials)
-    if not user_id:
-        return None
-    return db.scalar(select(User).where(User.id == uuid.UUID(user_id)))
+    
+    token = creds.credentials
+
+    # 1. Try local JWT
+    user_id = verify_access_token(token)
+    if user_id:
+        try:
+            return db.scalar(select(User).where(User.id == uuid.UUID(user_id)))
+        except ValueError:
+            pass
+
+    # 2. Try Supabase JWT
+    if settings.SUPABASE_JWT_SECRET:
+        try:
+            payload = jwt.decode(
+                token,
+                settings.SUPABASE_JWT_SECRET,
+                algorithms=["HS256"],
+                options={"verify_aud": False}
+            )
+            email = payload.get("email")
+            supabase_uid = payload.get("sub")
+            if email and supabase_uid:
+                user_metadata = payload.get("user_metadata", {}) or {}
+                name = (
+                    user_metadata.get("full_name")
+                    or user_metadata.get("name")
+                    or user_metadata.get("preferred_username")
+                    or email.split("@")[0]
+                )
+                return get_or_create_supabase_user(db, supabase_uid, email, name)
+        except JWTError:
+            pass
+
+    return None

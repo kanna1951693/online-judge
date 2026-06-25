@@ -46,7 +46,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    google_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
+    supabase_auth_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
     profile_hash: Mapped[str] = mapped_column(
         String(64), unique=True, nullable=False,
         server_default=text("replace(gen_random_uuid()::text, '-', '')")

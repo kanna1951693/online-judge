@@ -4,7 +4,7 @@ import ProblemWorkspace from './pages/ProblemWorkspace'
 import CompilerPage from './pages/CompilerPage'
 import ProfilePage from './pages/ProfilePage'
 import AuthModal from './components/AuthModal'
-import { supabase } from './lib/supabaseClient'
+import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
 import {
   Zap, LayoutList, Sun, Moon, Menu, X, User, LogOut, LogIn
 } from 'lucide-react'
@@ -97,6 +97,7 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [authSyncError, setAuthSyncError] = useState('')
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
 
   /* ── Persistent theme ── */
@@ -118,32 +119,49 @@ export default function App() {
 
   // Handle Supabase Auth redirect sync
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    if (!isSupabaseConfigured) return undefined
+
+    let handledAccessToken = null
+
+    const exchangeSupabaseSession = async (session) => {
       if (session && session.access_token) {
+        if (handledAccessToken === session.access_token) return
+        handledAccessToken = session.access_token
+
         try {
+          setAuthSyncError('')
           const res = await fetch('/api/v1/auth/supabase-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ access_token: session.access_token }),
           })
-          if (!res.ok) throw new Error('Supabase sync login failed')
           const data = await res.json()
+          if (!res.ok) throw new Error(data.detail || 'Supabase login failed')
           
-          // Save local auth details
           localStorage.setItem('user', JSON.stringify(data.user))
           localStorage.setItem('token', data.access_token)
           setUser(data.user)
           setToken(data.access_token)
-          
-          // Clear hash fragments to keep URL clean
-          window.history.replaceState(null, null, window.location.origin + window.location.pathname)
-          
-          // Sign out of Supabase client locally so the listener isn't triggered on every reload
+          setAuthModalOpen(false)
+
+          if (window.location.pathname === '/auth/callback' || window.location.hash || window.location.search) {
+            window.history.replaceState(null, '', window.location.origin)
+          }
+
           await supabase.auth.signOut()
         } catch (err) {
           console.error('Supabase authentication error:', err)
+          setAuthSyncError(err.message)
         }
       }
+    }
+
+    supabase.auth.getSession().then(({ data }) => {
+      exchangeSupabaseSession(data.session)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      exchangeSupabaseSession(session)
     })
     
     return () => subscription.unsubscribe()
@@ -317,6 +335,18 @@ export default function App() {
 
       {/* ── Main ── */}
       <main className="flex-1 flex flex-col">
+        {authSyncError && (
+          <div className="border-b border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-400 flex items-center justify-center gap-3">
+            <span>{authSyncError}</span>
+            <button
+              onClick={() => setAuthSyncError('')}
+              aria-label="Dismiss authentication error"
+              className="p-1 rounded-md hover:bg-red-500/10"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         {view === 'compiler' ? (
           <CompilerPage dark={dark} />
         ) : view === 'problem' ? (

@@ -15,3 +15,4 @@ psycopg2-binary
 passlib
 bcrypt<=3.2.2
 python-jose[cryptography]
+supabase>=2.0.0

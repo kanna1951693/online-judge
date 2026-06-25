@@ -37,7 +37,7 @@ services:
     container_name: apexjudge-backend
     command: >
       sh -c "
-        python -m alembic upgrade head &&
+        alembic upgrade head &&
         uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
       "
     ports:
@@ -48,7 +48,8 @@ services:
       - PROBLEMS_JSON_PATH=/app/backend/app/problems.json
       - PROBLEMS_DIR=/app/backend/problems
       - DOCKER_HOST=unix:///var/run/docker.sock
-      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-supabase-jwt-secret-placeholder-for-dev-only}
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock
@@ -73,7 +74,8 @@ services:
       - PROBLEMS_JSON_PATH=/app/backend/app/problems.json
       - PROBLEMS_DIR=/app/backend/problems
       - DOCKER_HOST=unix:///var/run/docker.sock
-      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-supabase-jwt-secret-placeholder-for-dev-only}
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock

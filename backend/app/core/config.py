@@ -49,11 +49,13 @@ class Settings(BaseSettings):
 
     DOCKER_TIMEOUT_GRACE_SEC: float = 0.5
 
+    # Supabase Auth
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+    SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
+
     # Auth / JWT
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "apexjudge-dev-secret-key-change-in-prod")
-    SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "supabase-jwt-secret-placeholder-for-dev-only")
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRY_HOURS: int = 72
 
 settings = Settings()
-

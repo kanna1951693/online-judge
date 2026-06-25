@@ -1,23 +1,23 @@
 """
-Authentication router: register, login, Google sign-in, and /me endpoint.
+Authentication router: local register/login, Supabase OAuth exchange, and /me.
 """
 import hashlib
+import re
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 
 from backend.app.core.database import get_db
 from backend.app.core.security import (
     hash_password, verify_password, create_access_token, get_current_user
 )
-from jose import jwt
 from backend.app.core.config import settings
 from backend.app.db.models import User
 from backend.app.auth.schemas import (
-    RegisterPayload, LoginPayload, GoogleLoginPayload,
-    SupabaseLoginPayload, TokenResponse, UserMeResponse
+    RegisterPayload, LoginPayload, SupabaseLoginPayload, TokenResponse, UserMeResponse
 )
 
 router = APIRouter()
@@ -28,23 +28,170 @@ def _generate_profile_hash(user_id: str) -> str:
     return hashlib.sha256(user_id.encode()).hexdigest()[:32]
 
 
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def _unique_username(db: Session, preferred_name: str | None, email: str) -> str:
+    seed = preferred_name or email.split("@")[0] or "user"
+    base = re.sub(r"[^a-zA-Z0-9_]", "", seed).lower()[:50]
+    if len(base) < 3:
+        base = "user"
+
+    username = base
+    counter = 1
+    while db.scalar(select(User).where(User.username == username)):
+        suffix = str(counter)
+        username = f"{base[:64 - len(suffix)]}{suffix}"
+        counter += 1
+    return username
+
+
+def _read_value(source: Any, key: str, default: Any = None) -> Any:
+    if isinstance(source, dict):
+        return source.get(key, default)
+    return getattr(source, key, default)
+
+
+def _supabase_configured() -> bool:
+    return bool(
+        settings.SUPABASE_URL
+        and settings.SUPABASE_ANON_KEY
+        and "your-project-id" not in settings.SUPABASE_URL
+        and "your-anon-key" not in settings.SUPABASE_ANON_KEY
+    )
+
+
+def _verify_supabase_token_with_httpx(access_token: str) -> Any:
+    import httpx
+
+    try:
+        response = httpx.get(
+            f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/user",
+            headers={
+                "apikey": settings.SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {access_token}",
+            },
+            timeout=10.0,
+        )
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not reach Supabase Auth: {exc}",
+        ) from exc
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=401, detail="Invalid Supabase access token")
+    return response.json()
+
+
+def _verify_supabase_access_token(access_token: str) -> Any:
+    if not access_token:
+        raise HTTPException(status_code=400, detail="Supabase access token is required")
+    if not _supabase_configured():
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase Auth is not configured on the backend.",
+        )
+
+    try:
+        from supabase import create_client
+    except ImportError:
+        return _verify_supabase_token_with_httpx(access_token)
+
+    try:
+        supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_ANON_KEY)
+        response = supabase.auth.get_user(access_token)
+        auth_user = getattr(response, "user", None)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Supabase token verification failed: {exc}",
+        ) from exc
+
+    if not auth_user:
+        raise HTTPException(status_code=401, detail="Invalid Supabase access token")
+    return auth_user
+
+
+def _extract_supabase_identity(auth_user: Any) -> tuple[str, str, str]:
+    supabase_uid = _read_value(auth_user, "id")
+    email = _normalize_email(_read_value(auth_user, "email", "") or "")
+    metadata = _read_value(auth_user, "user_metadata", {}) or {}
+    if not isinstance(metadata, dict):
+        metadata = {}
+
+    name = (
+        metadata.get("full_name")
+        or metadata.get("name")
+        or metadata.get("preferred_username")
+        or email.split("@")[0]
+    )
+
+    if not supabase_uid or not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Supabase user does not contain an id and email.",
+        )
+    return str(supabase_uid), email, str(name)
+
+
+def _get_or_create_supabase_user(
+    db: Session,
+    supabase_uid: str,
+    email: str,
+    name: str,
+) -> User:
+    user = db.scalar(select(User).where(User.supabase_auth_id == supabase_uid))
+    if user:
+        return user
+
+    user = db.scalar(select(User).where(func.lower(User.email) == email))
+    if user:
+        if user.supabase_auth_id and user.supabase_auth_id != supabase_uid:
+            raise HTTPException(
+                status_code=409,
+                detail="This email is already linked to another Supabase identity.",
+            )
+        user.supabase_auth_id = supabase_uid
+        db.commit()
+        db.refresh(user)
+        return user
+
+    user_id = uuid.uuid4()
+    user = User(
+        id=user_id,
+        username=_unique_username(db, name, email),
+        email=email,
+        password_hash=None,
+        supabase_auth_id=supabase_uid,
+        profile_hash=_generate_profile_hash(str(user_id)),
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def _user_response(user: User) -> UserMeResponse:
     return UserMeResponse(
         id=str(user.id),
         username=user.username,
         email=user.email,
         profile_hash=user.profile_hash,
-        google_connected=user.google_id is not None,
+        google_connected=user.supabase_auth_id is not None,
     )
 
 
 # ── Register ─────────────────────────────────────────────────────────────────
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register(payload: RegisterPayload, db: Session = Depends(get_db)):
+    email = _normalize_email(payload.email)
+
     # Check uniqueness
     existing = db.scalar(
         select(User).where(
-            or_(User.username == payload.username, User.email == payload.email)
+            or_(User.username == payload.username, func.lower(User.email) == email)
         )
     )
     if existing:
@@ -56,7 +203,7 @@ def register(payload: RegisterPayload, db: Session = Depends(get_db)):
     user = User(
         id=user_id,
         username=payload.username,
-        email=payload.email,
+        email=email,
         password_hash=hash_password(payload.password),
         profile_hash=_generate_profile_hash(str(user_id)),
     )
@@ -71,7 +218,8 @@ def register(payload: RegisterPayload, db: Session = Depends(get_db)):
 # ── Login ────────────────────────────────────────────────────────────────────
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginPayload, db: Session = Depends(get_db)):
-    user = db.scalar(select(User).where(User.email == payload.email))
+    email = _normalize_email(payload.email)
+    user = db.scalar(select(User).where(func.lower(User.email) == email))
     if not user or not user.password_hash:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not verify_password(payload.password, user.password_hash):
@@ -81,163 +229,16 @@ def login(payload: LoginPayload, db: Session = Depends(get_db)):
     return TokenResponse(access_token=token, user=_user_response(user))
 
 
-# ── Google Sign-In ───────────────────────────────────────────────────────────
-@router.post("/google-login", response_model=TokenResponse)
-def google_login(payload: GoogleLoginPayload, db: Session = Depends(get_db)):
-    """
-    Accepts a Google ID token. In production, this would verify the token
-    via Google's API. For local dev, we decode the payload without verification
-    or accept a simulated credential format:
-      { "id_token": "sim:<google_id>:<email>:<name>" }
-    """
-    id_token = payload.id_token
-
-    # ── Simulated credential for local dev ──
-    if id_token.startswith("sim:"):
-        parts = id_token.split(":", 3)
-        if len(parts) != 4:
-            raise HTTPException(status_code=400, detail="Invalid simulated token format")
-        _, google_id, email, name = parts
-    else:
-        # ── Real Google token verification ──
-        try:
-            from google.oauth2 import id_token as google_id_token
-            from google.auth.transport import requests as google_requests
-            idinfo = google_id_token.verify_oauth2_token(
-                id_token, google_requests.Request()
-            )
-            google_id = idinfo["sub"]
-            email = idinfo.get("email", "")
-            name = idinfo.get("name", email.split("@")[0])
-        except ImportError:
-            # google-auth not installed — treat as simulated
-            raise HTTPException(
-                status_code=400,
-                detail="Google auth library not installed. Use simulated token: sim:<id>:<email>:<name>"
-            )
-        except Exception as e:
-            raise HTTPException(status_code=401, detail=f"Google token verification failed: {e}")
-
-    # Check if user exists by google_id
-    user = db.scalar(select(User).where(User.google_id == google_id))
-    if user:
-        token = create_access_token(str(user.id))
-        return TokenResponse(access_token=token, user=_user_response(user))
-
-    # Check if email already exists (link Google account)
-    user = db.scalar(select(User).where(User.email == email))
-    if user:
-        user.google_id = google_id
-        db.commit()
-        db.refresh(user)
-        token = create_access_token(str(user.id))
-        return TokenResponse(access_token=token, user=_user_response(user))
-
-    # Create new user
-    # Ensure unique username
-    base_name = name.replace(" ", "").lower()[:50]
-    username = base_name
-    counter = 1
-    while db.scalar(select(User).where(User.username == username)):
-        username = f"{base_name}{counter}"
-        counter += 1
-
-    user_id = uuid.uuid4()
-    user = User(
-        id=user_id,
-        username=username,
-        email=email,
-        google_id=google_id,
-        profile_hash=_generate_profile_hash(str(user_id)),
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    token = create_access_token(str(user.id))
-    return TokenResponse(access_token=token, user=_user_response(user))
-
-
 # ── Supabase Google Sign-In ──────────────────────────────────────────────────
 @router.post("/supabase-login", response_model=TokenResponse)
 def supabase_login(payload: SupabaseLoginPayload, db: Session = Depends(get_db)):
     """
-    Accepts a Supabase access token (JWT), verifies it using the project's
-    JWT secret, maps/links the user to the existing users table (by email or sub),
-    and returns a standard local JWT access token.
-    
-    Supports simulated tokens starting with 'sim:' for offline local dev/testing.
+    Accepts a Supabase access token, validates it with Supabase Auth, maps or
+    creates the matching local user, and returns the app's normal local JWT.
     """
-    token = payload.access_token
-
-    # ── Simulated credential for local dev/testing ──
-    if token.startswith("sim:"):
-        parts = token.split(":", 2)
-        if len(parts) != 3:
-            raise HTTPException(status_code=400, detail="Invalid simulated Supabase token format")
-        _, supabase_uid, email = parts
-        name = email.split("@")[0]
-    else:
-        # ── Real Supabase JWT verification ──
-        if not settings.SUPABASE_JWT_SECRET or settings.SUPABASE_JWT_SECRET == "supabase-jwt-secret-placeholder-for-dev-only":
-            raise HTTPException(
-                status_code=500,
-                detail="SUPABASE_JWT_SECRET is not configured on the backend."
-            )
-        try:
-            # Decode using Supabase JWT secret
-            payload_data = jwt.decode(
-                token,
-                settings.SUPABASE_JWT_SECRET,
-                algorithms=["HS256"],
-                options={"verify_aud": False}
-            )
-            supabase_uid = payload_data.get("sub")
-            email = payload_data.get("email")
-            user_metadata = payload_data.get("user_metadata", {})
-            name = user_metadata.get("full_name") or user_metadata.get("name") or email.split("@")[0]
-        except Exception as e:
-            raise HTTPException(status_code=401, detail=f"Supabase token verification failed: {e}")
-
-    if not email or not supabase_uid:
-        raise HTTPException(status_code=400, detail="Token does not contain email or sub claim.")
-
-    # 1. Check if user exists by google_id (reused to store supabase sub / provider identity)
-    user = db.scalar(select(User).where(User.google_id == supabase_uid))
-    if user:
-        local_token = create_access_token(str(user.id))
-        return TokenResponse(access_token=local_token, user=_user_response(user))
-
-    # 2. Check if email already exists (link existing account)
-    user = db.scalar(select(User).where(User.email == email))
-    if user:
-        user.google_id = supabase_uid
-        db.commit()
-        db.refresh(user)
-        local_token = create_access_token(str(user.id))
-        return TokenResponse(access_token=local_token, user=_user_response(user))
-
-    # 3. Create new user if they don't exist
-    # Ensure unique username
-    base_name = name.replace(" ", "").lower()[:50]
-    username = base_name
-    counter = 1
-    while db.scalar(select(User).where(User.username == username)):
-        username = f"{base_name}{counter}"
-        counter += 1
-
-    user_id = uuid.uuid4()
-    user = User(
-        id=user_id,
-        username=username,
-        email=email,
-        google_id=supabase_uid,
-        profile_hash=_generate_profile_hash(str(user_id)),
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
+    auth_user = _verify_supabase_access_token(payload.access_token)
+    supabase_uid, email, name = _extract_supabase_identity(auth_user)
+    user = _get_or_create_supabase_user(db, supabase_uid, email, name)
     local_token = create_access_token(str(user.id))
     return TokenResponse(access_token=local_token, user=_user_response(user))
 

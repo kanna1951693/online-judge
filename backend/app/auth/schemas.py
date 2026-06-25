@@ -13,13 +13,8 @@ class LoginPayload(BaseModel):
     password: str
 
 
-class GoogleLoginPayload(BaseModel):
-    """Receives a Google ID token (from frontend Google Sign-In)."""
-    id_token: str  # The Google credential JWT
-
-
 class SupabaseLoginPayload(BaseModel):
-    """Receives a Supabase Auth access token (JWT)."""
+    """Receives a Supabase Auth access token."""
     access_token: str
 
 

@@ -1,0 +1,82 @@
+# ApexJudge production blueprint (Render)
+#
+# IMPORTANT: The grader worker needs Docker socket access to run sandboxed code.
+# Render/Railway/Fly free tiers do NOT expose the host Docker socket, so full
+# code execution will not work on this PaaS. Use this for API + auth + problem
+# catalog demos, or deploy the full stack on a VPS with docker-compose instead.
+#
+# Docs: docs/DEPLOYMENT.md
+
+services:
+  - type: redis
+    name: apexjudge-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+  - type: web
+    name: apexjudge-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.prod
+    dockerContext: .
+    plan: free
+    healthCheckPath: /
+    autoDeploy: true
+    preDeployCommand: alembic upgrade head
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: apexjudge-redis
+          property: connectionString
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: PROBLEMS_JSON_PATH
+        value: /app/backend/app/problems.json
+      - key: PROBLEMS_DIR
+        value: /app/backend/problems
+      - key: SANDBOX_TEMP_DIR
+        value: /app/backend/temp/submissions
+      - key: SANDBOX_LIB_DIR
+        value: /app/backend/sandbox/lib
+      - key: HOST_WORKSPACE_PATH
+        value: /app
+
+  - type: worker
+    name: apexjudge-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile.prod
+    dockerContext: .
+    plan: free
+    dockerCommand: python -m backend.app.judge.grader
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: apexjudge-redis
+          property: connectionString
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: PROBLEMS_JSON_PATH
+        value: /app/backend/app/problems.json
+      - key: PROBLEMS_DIR
+        value: /app/backend/problems
+      - key: SANDBOX_TEMP_DIR
+        value: /app/backend/temp/submissions
+      - key: SANDBOX_LIB_DIR
+        value: /app/backend/sandbox/lib
+      - key: HOST_WORKSPACE_PATH
+        value: /app

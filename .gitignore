@@ -34,6 +34,9 @@ Thumbs.db
 frontend/node_modules/
 node_modules/
 
+# Explicitly un-ignore frontend source lib (overrides the Python 'lib/' patterns below)
+!frontend/src/lib/
+
 # Production build output
 frontend/dist/
 frontend/build/
@@ -73,7 +76,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Scoped to backend/root only — do NOT use bare 'lib/' which would ignore frontend/src/lib/
+backend/lib/
+backend/lib64/
 lib64/
 parts/
 sdist/

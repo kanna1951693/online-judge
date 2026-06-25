@@ -1,4 +1,5 @@
 const rawBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+console.log('VITE_API_URL resolved to:', import.meta.env.VITE_API_URL)
 
 /** Empty in dev (Vite proxy); set to deployed backend URL in production. */
 export const API_BASE_URL = rawBase

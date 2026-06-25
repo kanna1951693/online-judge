@@ -7,3 +7,10 @@ pydantic-settings
 python-multipart
 pytest
 httpx
+# Database
+sqlalchemy>=2.0
+alembic
+psycopg2-binary
+# Auth (for password hashing)
+passlib[bcrypt]
+python-jose[cryptography]

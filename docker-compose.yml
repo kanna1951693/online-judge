@@ -1,6 +1,25 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: apexjudge-postgres
+    environment:
+      POSTGRES_DB: apexjudge
+      POSTGRES_USER: apexjudge
+      POSTGRES_PASSWORD: apexjudge_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - apexjudge-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apexjudge -d apexjudge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   redis:
     image: redis:7-alpine
     container_name: apexjudge-redis
@@ -16,37 +35,51 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: apexjudge-backend
-    command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+    command: >
+      sh -c "
+        python -m alembic upgrade head &&
+        uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
     ports:
       - "8000:8000"
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+psycopg2://apexjudge:apexjudge_secret@postgres:5432/apexjudge
       - PROBLEMS_JSON_PATH=/app/backend/app/problems.json
       - PROBLEMS_DIR=/app/backend/problems
+      - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - apexjudge-net
+
 
   worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: apexjudge-worker
-    command: python -m backend.app.workers.grader
+    command: python -m backend.app.judge.grader
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+psycopg2://apexjudge:apexjudge_secret@postgres:5432/apexjudge
       - PROBLEMS_JSON_PATH=/app/backend/app/problems.json
       - PROBLEMS_DIR=/app/backend/problems
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - .:/app
-      # Mount the Docker socket to allow the worker to manage sandboxed containers on the host
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - apexjudge-net
 
@@ -56,3 +89,4 @@ networks:
 
 volumes:
   redis_data:
+  postgres_data:

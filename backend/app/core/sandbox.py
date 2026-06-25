@@ -6,6 +6,7 @@ import uuid
 import docker
 from docker.errors import ContainerError, ImageNotFound
 from typing import Dict, Any, Optional
+from backend.app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +20,16 @@ class SandboxExecutor:
         
         # Unique ID for this sandboxed run
         self.run_id = str(uuid.uuid4())
-        self.host_dir = f"/Users/kunalb/online-judge/backend/temp/submissions/{self.run_id}"
-        os.makedirs(self.host_dir, exist_ok=True)
+        
+        # Where Python writes files inside the container/host
+        self.write_dir = os.path.join(settings.SANDBOX_TEMP_DIR, self.run_id)
+        os.makedirs(self.write_dir, exist_ok=True)
+        
+        # The path the Docker daemon sees on the host for mounting volumes
+        if self.write_dir.startswith("/app"):
+            self.host_dir = self.write_dir.replace("/app", settings.HOST_WORKSPACE_PATH, 1)
+        else:
+            self.host_dir = self.write_dir
         
         # Initialize Docker client
         try:
@@ -30,19 +39,48 @@ class SandboxExecutor:
             self.docker_client = None
 
         # Write code to file
-        self.code_filename = "solution.py" if self.language == "python" else "solution.cpp"
-        self.code_path = os.path.join(self.host_dir, self.code_filename)
+        if self.language == "python":
+            self.code_filename = "solution.py"
+        elif self.language == "cpp":
+            self.code_filename = "solution.cpp"
+        elif self.language == "java":
+            self.code_filename = "Solution.java"
+        else:
+            self.code_filename = "solution.txt"
+
+        self.code_path = os.path.join(self.write_dir, self.code_filename)
         with open(self.code_path, "w") as f:
             f.write(self.source_code)
+
+        # Copy sandbox libraries
+        self._copy_libraries()
 
         self.compiled = False
         self.compile_error_msg = None
 
+    def _copy_libraries(self):
+        try:
+            lib_dir = settings.SANDBOX_LIB_DIR
+            if self.language == "cpp":
+                dest_dir = os.path.join(self.write_dir, "nlohmann")
+                os.makedirs(dest_dir, exist_ok=True)
+                src_file = os.path.join(lib_dir, "json.hpp")
+                if os.path.exists(src_file):
+                    shutil.copy(src_file, os.path.join(dest_dir, "json.hpp"))
+            elif self.language == "java":
+                dest_dir = os.path.join(self.write_dir, "lib")
+                os.makedirs(dest_dir, exist_ok=True)
+                src_file = os.path.join(lib_dir, "org.json.jar")
+                if os.path.exists(src_file):
+                    shutil.copy(src_file, os.path.join(dest_dir, "org.json.jar"))
+        except Exception as e:
+            logger.error(f"Failed to copy sandbox libraries: {e}")
+
     def compile(self) -> bool:
         """
-        Compiles C++ source code inside a Docker container.
+        Compiles C++ or Java source code inside a Docker container.
         """
-        if self.language != "cpp":
+        if self.language not in ["cpp", "java"]:
             self.compiled = True
             return True
 
@@ -50,8 +88,15 @@ class SandboxExecutor:
             self.compile_error_msg = "Docker client not initialized"
             return False
 
-        # Image for compilation
-        compiler_image = "frolvlad/alpine-gxx"
+        if self.language == "cpp":
+            compiler_image = "frolvlad/alpine-gxx"
+            compile_cmd = "g++ -O3 -static -I/app /app/solution.cpp -o /app/solution"
+        elif self.language == "java":
+            compiler_image = "eclipse-temurin:17-jdk"
+            compile_cmd = "javac -cp /app/lib/org.json.jar /app/Solution.java -d /app/"
+        else:
+            return False
+
         try:
             # Check if image exists, pull if not
             try:
@@ -61,10 +106,9 @@ class SandboxExecutor:
                 self.docker_client.images.pull(compiler_image)
 
             # Run compilation container
-            # Mounting host_dir to /app inside container
             container = self.docker_client.containers.run(
                 image=compiler_image,
-                command=f"g++ -O3 -static /app/solution.cpp -o /app/solution",
+                command=compile_cmd,
                 volumes={self.host_dir: {"bind": "/app", "mode": "rw"}},
                 network_mode="none",
                 detach=True
@@ -121,13 +165,13 @@ class SandboxExecutor:
             result["error_message"] = "Docker client not available"
             return result
 
-        if self.language == "cpp" and not self.compiled:
+        if self.language in ["cpp", "java"] and not self.compiled:
             result["verdict"] = "CE"
             result["error_message"] = self.compile_error_msg or "Not compiled"
             return result
 
         # Setup input file
-        input_file_path = os.path.join(self.host_dir, "input.txt")
+        input_file_path = os.path.join(self.write_dir, "input.txt")
         with open(input_file_path, "w") as f:
             f.write(input_data)
 
@@ -138,6 +182,9 @@ class SandboxExecutor:
         elif self.language == "cpp":
             image_name = "alpine:3.18"
             run_cmd = "sh -c '/app/solution < /app/input.txt'"
+        elif self.language == "java":
+            image_name = "eclipse-temurin:17-jre"
+            run_cmd = "sh -c 'java -cp /app:/app/lib/org.json.jar Solution < /app/input.txt'"
         else:
             result["error_message"] = f"Unsupported language: {self.language}"
             return result
@@ -161,7 +208,7 @@ class SandboxExecutor:
             # CPUs: cpus=0.5 -> nano_cpus = 500,000,000
             # PID limit: pids-limit = 64
             # Network: none
-            # Read-only rootfs: True (only /app is mounted and it's ro, /tmp can be tmpfs if needed)
+            # Read-only rootfs: True
             container = self.docker_client.containers.run(
                 image=image_name,
                 command=run_cmd,
@@ -204,12 +251,8 @@ class SandboxExecutor:
             duration_ms = int(elapsed * 1000)
 
             # Memory calculation
-            # Try to fetch max memory usage from container stats if possible, or fallback
             memory_kb = 0
             try:
-                # Docker keeps track of max memory in docker stats, or we can use container.stats(stream=False)
-                # But since the container is exited, stats stream may fail or be empty.
-                # If OOM killed, memory_kb should be around self.memory_limit_mb * 1024
                 if oom_killed:
                     memory_kb = self.memory_limit_mb * 1024
             except Exception:
@@ -226,32 +269,35 @@ class SandboxExecutor:
             if verdict == "TLE":
                 result["verdict"] = "TLE"
                 result["time_ms"] = int(timeout * 1000)
-            elif oom_killed or exit_code == 137: # Docker kills with 137 on OOM or manual kill
-                # If it was manual kill from our watchdog, verdict is already set to "TLE".
-                # If it wasn't watchdog and exited with 137/OOM, it is MLE.
-                if result.get("verdict") == "TLE":
-                    pass
-                elif oom_killed:
-                    result["verdict"] = "MLE"
-                    result["memory_kb"] = self.memory_limit_mb * 1024
-                else:
-                    # Let's double check if it was memory related. In case of exit_code == 137 without OOMKilled flag set (sometimes happens), we check memory limits
-                    result["verdict"] = "MLE"
-                    result["memory_kb"] = self.memory_limit_mb * 1024
+            elif oom_killed or exit_code == 137:
+                result["verdict"] = "MLE"
+                result["memory_kb"] = self.memory_limit_mb * 1024
             elif exit_code != 0:
                 result["verdict"] = "RE"
                 result["error_message"] = stderr_output or f"Exit code: {exit_code}"
             else:
+                result["stdout"] = stdout_output
+                
                 # Normalize newlines and whitespace for exact output diffing
                 norm_out = "\n".join(line.rstrip() for line in stdout_output.strip().splitlines())
                 norm_exp = "\n".join(line.rstrip() for line in expected_output.strip().splitlines())
                 
-                if norm_out == norm_exp:
+                if expected_output == "__IGNORE__":
                     result["verdict"] = "AC"
                 else:
-                    result["verdict"] = "WA"
-                    result["stdout"] = stdout_output
-                    result["expected_output"] = expected_output
+                    json_matched = False
+                    try:
+                        import json as std_json
+                        if std_json.loads(norm_out) == std_json.loads(norm_exp):
+                            json_matched = True
+                    except Exception:
+                        pass
+                    
+                    if json_matched or norm_out == norm_exp:
+                        result["verdict"] = "AC"
+                    else:
+                        result["verdict"] = "WA"
+                        result["expected_output"] = expected_output
 
             result["time_ms"] = duration_ms
 
@@ -271,8 +317,8 @@ class SandboxExecutor:
         """
         Removes the host temporary execution directory.
         """
-        if os.path.exists(self.host_dir):
+        if os.path.exists(self.write_dir):
             try:
-                shutil.rmtree(self.host_dir)
+                shutil.rmtree(self.write_dir)
             except Exception as e:
-                logger.error(f"Failed to cleanup sandbox host dir {self.host_dir}: {e}")
+                logger.error(f"Failed to cleanup sandbox host dir {self.write_dir}: {e}")

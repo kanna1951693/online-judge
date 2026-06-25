@@ -6,6 +6,18 @@ class SubmissionPayload(BaseModel):
     language: str
     source_code: str
 
+class RunPayload(BaseModel):
+    language: str
+    source_code: str
+    stdin: str = ""  # custom input from user
+
+class RunResponse(BaseModel):
+    stdout: Optional[str] = None
+    stderr: Optional[str] = None
+    verdict: str   # OK, RE, TLE, CE
+    time_ms: int
+    compile_error: Optional[str] = None
+
 class TestCaseResult(BaseModel):
     case_id: int
     verdict: str  # AC, WA, TLE, MLE, RE

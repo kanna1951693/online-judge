@@ -1,218 +1,304 @@
-# ApexJudge: A Sandboxed Asynchronous Online Judge
+# ApexJudge: A Sandboxed Online Judge
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white)](https://online-judge-owlksiijn-kunal-s-projects26.vercel.app/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
+[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://cloudflare.com)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
-[![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 
-**ApexJudge** is a secure, sandboxed online judge designed to evaluate user-submitted C++ and Python code in real-time. By utilizing Docker containers as micro-sandboxes, it isolates and executes untrusted submissions while enforcing strict kernel-level cgroups resource budgets.
+**ApexJudge** is a secure, sandboxed online judge that evaluates user-submitted C++, Python, and Java code in real-time. Code is isolated inside Docker containers enforcing strict cgroup resource limits (CPU, memory, PID, network).
+
+🌐 **Live at:** https://online-judge-owlksiijn-kunal-s-projects26.vercel.app/
+
+---
+
+## 🏗️ Deployment Architecture
+
+```
+Browser (Vercel CDN)
+        │
+        │  HTTPS (Cloudflare Tunnel URL — set as VITE_API_URL in Vercel)
+        ▼
+FastAPI Backend (localhost:8000)   ←── Cloudflared tunnel exposes this
+        │                                to the public internet
+        ├── Supabase Postgres (cloud DB, 34+ problems seeded)
+        ├── Docker Engine (sandboxed code execution)
+        └── Google OAuth via Supabase Auth
+```
+
+- **Frontend**: React + Vite, deployed on **Vercel**
+- **Backend**: FastAPI, runs **locally** and exposed via **Cloudflare Tunnel**
+- **Database**: **Supabase Postgres** (hosted, always-on)
+- **Auth**: **Supabase Google OAuth**
+- **Sandboxing**: Local **Docker** containers (must be running)
 
 ---
 
 ## 🏗️ System Architecture
 
-ApexJudge relies on an asynchronous event-driven architecture to decouple heavy compilation and execution sandboxing workloads from the API thread.
-
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as User / Candidate
-    participant FE as React Frontend (Vite)
-    participant BE as FastAPI Backend
-    participant RD as Redis Queue & Cache
-    participant WK as Grader Worker
-    participant DK as Docker Sandbox (Isolated Container)
+    participant FE as React Frontend (Vercel)
+    participant CF as Cloudflare Tunnel
+    participant BE as FastAPI Backend (local)
+    participant DB as Supabase Postgres
+    participant DK as Docker Sandbox
 
-    User->>FE: Submits C++ or Python Code
-    FE->>BE: POST /api/v1/submit (code, lang, problem_id)
-    BE->>RD: Enqueue grading job & cache state (QUEUED)
-    BE-->>FE: HTTP 200 OK (submission_id)
-    
-    rect rgb(15, 23, 42)
-        Note over FE,BE: Frontend polls GET /api/v1/submission/{id} every 1-2s
-    end
+    User->>FE: Submits code
+    FE->>CF: POST /api/v1/judge/problems/{slug}/submit
+    CF->>BE: Forwards request (tunnel)
+    BE->>DB: Save submission record
+    BE-->>FE: { submission_id, status: QUEUED }
 
-    WK->>RD: Pulls job from Redis queue (status -> RUNNING)
-    WK->>DK: Spins up fresh isolated runner container
-    critical Code Execution in Sandbox
-        DK->>DK: Compile (C++) & Run test cases (C++/Python)
-    option Exceeds time limit (TLE)
-        WK->>DK: Host-side external watchdog kills container (SIGKILL)
-    end
-    DK-->>WK: Exit code, stdout/stderr, execution time, OOM flag
-    WK->>WK: Evaluate verdicts (AC, WA, TLE, MLE, RE) per test-case
-    WK->>RD: Update cache with final grading results (status -> COMPLETED)
-    FE->>BE: GET /api/v1/submission/{id} -> Returns results
-    FE->>User: Render color-coded test cards and stdout comparisons
+    FE->>CF: Poll GET /api/v1/judge/submissions/{id}
+    BE->>DK: Spin up isolated container, run test cases
+    DK-->>BE: Exit code, stdout, time, memory
+    BE->>DB: Store verdict
+    BE-->>FE: Verdict (AC / WA / TLE / MLE / RE)
+    FE->>User: Color-coded test results
 ```
 
 ---
 
-## 🔒 Security & Sandboxing (Isolation Deep-Dive)
+## 🚀 How to Run (Local Backend + Vercel Frontend)
 
-Executing untrusted candidate code on self-hosted servers introduces severe security vulnerabilities (RCE, CPU starvation, memory leak exhaustion, and fork bombs). ApexJudge implements strict defense-in-depth security policies:
+This project uses a **split deployment**: the frontend is on Vercel, but the backend runs on your local machine and is exposed via a Cloudflare Tunnel.
 
-### 1. Hard cgroups Resource Limits
-Every test run is executed inside a disposable Docker container with strict control groups (cgroups) boundaries:
-- **Memory Boundary**: Restricted to `256MB` using Docker's `-m "256m"` flag. Programs exceeding this allocation are killed instantly and graded as Memory Limit Exceeded (`MLE`).
-- **CPU Quota**: Shared at `0.5` of a single CPU core using `--cpus="0.5"`, guaranteeing runaway infinite loops cannot starve API processes.
-- **Thread/Process Limit (Fork Bomb Protection)**: Enforced at `--pids-limit=64` to prevent candidates from spawning recursive child processes (`os.fork()`) to crash the machine.
+### Prerequisites
 
-### 2. Network Isolation
-Containers are launched with the `--network none` flag. Submitted code has zero access to the local loopback, databases, internal network, or the public internet, preventing data exfiltration or reverse shells.
+- macOS with [Homebrew](https://brew.sh)
+- Python 3.11+
+- Node.js 18+
+- Docker Desktop (running)
+- `cloudflared` CLI: `brew install cloudflared`
 
-### 3. Read-Only Root Filesystem & Temp Mounts
-- The runtime container filesystem is read-only (`--read-only`), meaning binary directories or system files cannot be modified or deleted.
-- Shared code and inputs are mounted to `/app` inside the container as **read-only** (`mode=ro`).
+---
 
-### 4. Host-Driven Wall-Clock Watchdog (TLE Detection)
-We never rely on the sandbox container to terminate itself. The grader worker initiates an asynchronous host-controlled watchdog thread. If the container does not exit within the problem's time limit (e.g. `2.0s`), the host issues a `docker kill` command directly to the Docker engine.
+### Step 1 — Clone & Install
 
-### 5. Leak-Free Lifecycle (Automated Cleanup)
-Containers are run in transient modes and programmatically removed immediately after execution exits (`container.remove(force=True)` in a Python `finally` block). Testing confirms zero container accumulation after multiple consecutive submissions.
+```bash
+git clone https://github.com/kanna1951693/online-judge.git
+cd online-judge
+
+# Backend dependencies
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cd ..
+
+# Frontend dependencies
+cd frontend
+npm install
+cd ..
+```
+
+---
+
+### Step 2 — Configure Backend Environment
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Edit `backend/.env` and fill in your real values:
+
+```env
+# Supabase Postgres connection string (Session pooler, port 5432)
+DATABASE_URL=postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
+
+# Supabase project credentials
+SUPABASE_URL=https://[PROJECT-REF].supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_JWT_SECRET=your-jwt-secret
+```
+
+---
+
+### Step 3 — Start Docker Desktop
+
+Open **Docker Desktop** from your Applications folder. Wait until the whale icon in the menu bar stops animating (it's ready).
+
+> **To stop Docker later:** Click the whale icon in the menu bar → **Quit Docker Desktop**, or press `Cmd+Q` while Docker Desktop is in focus.
+> Docker will stop all running containers. Your data is safe — the database is in Supabase cloud, not in Docker.
+
+---
+
+### Step 4 — Start the Backend Server
+
+From the **repo root** (not inside `backend/`):
+
+```bash
+cd /path/to/online-judge
+source backend/venv/bin/activate
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+```
+
+Verify it's working:
+```bash
+curl http://localhost:8000/
+# → {"status":"ok","message":"ApexJudge Backend API running."}
+```
+
+---
+
+### Step 5 — Start the Cloudflare Tunnel
+
+Open a **second terminal** and run:
+
+```bash
+cloudflared tunnel --url http://localhost:8000
+```
+
+You'll see output like:
+```
+Your quick Tunnel has been created! Visit it at:
+https://abc-xyz-example.trycloudflare.com
+```
+
+**Copy that URL** — it changes every time you restart the tunnel.
+
+---
+
+### Step 6 — Update Vercel Environment Variable
+
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard) → your project → **Settings → Environment Variables**
+2. Update (or create) these variables:
+
+   | Variable | Value |
+   |----------|-------|
+   | `VITE_API_URL` | `https://abc-xyz-example.trycloudflare.com` ← your tunnel URL |
+   | `VITE_SUPABASE_URL` | `https://[project-ref].supabase.co` |
+   | `VITE_SUPABASE_ANON_KEY` | your Supabase anon key |
+
+3. Go to **Deployments** → click the three-dot menu on the latest deployment → **Redeploy**
+
+> ⚠️ You need to **redeploy on Vercel every time the tunnel URL changes** (i.e., every time you restart `cloudflared`).
+
+---
+
+### Step 7 — Done! Test the full flow
+
+Visit the live URL and verify:
+
+- [ ] Problem list loads (34+ problems)
+- [ ] Click a problem → workspace opens
+- [ ] Google login works (via Supabase Auth)
+- [ ] Run code → output appears
+- [ ] Submit → verdict (AC / WA / TLE) shown
+- [ ] Standalone Compiler page works
+
+---
+
+## 🔄 Daily Workflow (Reopening After a Break)
+
+```bash
+# 1. Open Docker Desktop (from Applications or Spotlight)
+#    Wait for the whale icon to stop animating
+
+# 2. Start the backend (from repo root)
+source backend/venv/bin/activate
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+
+# 3. Start the tunnel (in a separate terminal)
+cloudflared tunnel --url http://localhost:8000
+# Copy the new tunnel URL (it changes every restart)
+
+# 4. Update VITE_API_URL in Vercel dashboard with the new URL
+#    Then: Vercel → Deployments → Redeploy
+
+# 5. Visit https://online-judge-owlksiijn-kunal-s-projects26.vercel.app/
+```
+
+---
+
+## 🛑 Stopping Everything
+
+| Component | How to Stop |
+|-----------|-------------|
+| **Backend** (`uvicorn`) | Press `Ctrl+C` in its terminal |
+| **Cloudflare Tunnel** | Press `Ctrl+C` in its terminal |
+| **Docker Desktop** | Menu bar whale icon → **Quit Docker Desktop** (or `Cmd+Q`) |
+
+> Stopping Docker also stops all running sandbox containers. The Supabase cloud database is unaffected.
+
+---
+
+## 🔒 Security & Sandboxing
+
+Every code submission runs inside a **disposable Docker container** with:
+
+| Limit | Value | Enforced By |
+|-------|-------|-------------|
+| Memory | 256 MB | `docker -m 256m` |
+| CPU | 0.5 cores | `docker --cpus=0.5` |
+| Process/fork limit | 64 PIDs | `docker --pids-limit=64` |
+| Network access | None | `docker --network none` |
+| Filesystem | Read-only | `docker --read-only` |
+| Wall-clock timeout | Per-problem (default 2s) | Host watchdog thread |
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React (Vite), Tailwind CSS, Monaco Editor (VS Code core engine).
-- **Backend**: Python 3.10+, FastAPI (ASGI Framework).
-- **Queue & Cache**: Redis (Submission Queue + Cache Broker).
-- **Sandboxing**: Docker Engine API (`docker-py`).
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, Vite, Tailwind CSS, Monaco Editor |
+| Backend | Python 3.11+, FastAPI, SQLAlchemy, Alembic |
+| Database | Supabase Postgres (hosted) |
+| Auth | Supabase Google OAuth |
+| Sandboxing | Docker Engine (`docker-py`) |
+| Tunnel | Cloudflare Tunnel (`cloudflared`) |
+| Deployment | Vercel (frontend) |
 
 ---
 
-## 🚀 Setup & Local Installation
+## 📡 API Reference
 
-### macOS Host Prerequisites (Apple Silicon M1/M2/M3)
-On macOS, Docker runs inside a virtual machine. If using **Colima** instead of Docker Desktop, follow these setup steps to avoid architecture mismatch (Rosetta translation) and volume-mount sharing failures:
+Base URL: `https://[your-tunnel-url].trycloudflare.com`
 
-1. **Install Native Tools via Apple Silicon Homebrew**:
-   ```bash
-   /opt/homebrew/bin/brew install colima docker redis
-   ```
-2. **Start Colima with Native VM Driver**:
-   ```bash
-   PATH="/opt/homebrew/bin:$$PATH" colima start --cpu 2 --memory 4
-   ```
-3. **Configure Environment Paths**:
-   Ensure your shell points to Colima's native Docker socket:
-   ```bash
-   export DOCKER_HOST="unix:///Users/kunalb/.colima/default/docker.sock"
-   export PATH="/opt/homebrew/bin:$$PATH"
-   ```
-
-### Running Backend Locally (Development)
-1. Start Redis:
-   ```bash
-   /opt/homebrew/opt/redis/bin/redis-server /opt/homebrew/etc/redis.conf
-   ```
-2. Set up virtual environment and install packages:
-   ```bash
-   cd backend
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-3. Start the FastAPI API Server:
-   ```bash
-   uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
-   ```
-4. Start the Grader Queue Worker:
-   ```bash
-   PYTHONPATH=. python backend/app/workers/grader.py
-   ```
-
-### Running Frontend Locally
-1. Install dependencies:
-   ```bash
-   cd frontend
-   npm install
-   ```
-2. Run the Vite development server:
-   ```bash
-   npm run dev
-   ```
-   Open `http://localhost:5173` to access the IDE.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/judge/problems` | List all problems |
+| `GET` | `/api/v1/judge/problems/{slug}` | Problem detail + sample cases |
+| `POST` | `/api/v1/judge/problems/{slug}/run` | Run code (custom input, no verdict) |
+| `POST` | `/api/v1/judge/problems/{slug}/submit` | Submit for grading |
+| `GET` | `/api/v1/judge/submissions/{id}` | Submission verdict + test results |
+| `POST` | `/api/v1/compiler/run` | Standalone compiler (any code, no problem) |
+| `POST` | `/api/v1/auth/login` | Email/password login |
+| `POST` | `/api/v1/auth/register` | Email/password register |
+| `POST` | `/api/v1/auth/supabase-login` | Exchange Supabase OAuth token |
+| `GET` | `/api/v1/users/profile/{hash}` | User profile + stats |
 
 ---
 
-## 🔌 API Endpoint Documentation
+## 🗂️ Project Structure
 
-### 1. Retrieve Problem Catalog
-- **Endpoint**: `GET /api/v1/problems`
-- **Response** (`200 OK`):
-  ```json
-  [
-    {
-      "id": "two-sum",
-      "title": "Two Sum",
-      "description": "Given an array of integers nums...",
-      "time_limit": 2.0,
-      "memory_limit": 256
-    }
-  ]
-  ```
-
-### 2. Retrieve Problem Workspace Detail
-- **Endpoint**: `GET /api/v1/problems/{id}`
-- **Response** (`200 OK`):
-  ```json
-  {
-    "id": "two-sum",
-    "title": "Two Sum",
-    "description": "Given an array of integers...",
-    "time_limit": 2.0,
-    "memory_limit": 256,
-    "sample_cases": [
-      {
-        "input": "[2,7,11,15]\n9\n",
-        "output": "[0, 1]\n"
-      }
-    ]
-  }
-  ```
-
-### 3. Submit Solution Code
-- **Endpoint**: `POST /api/v1/submit`
-- **Request Body**:
-  ```json
-  {
-    "problem_id": "two-sum",
-    "language": "python" | "cpp",
-    "source_code": "def solve()..."
-  }
-  ```
-- **Response** (`200 OK`):
-  ```json
-  {
-    "submission_id": "bd207634-4d8e-451e-92a3-ad5f538ee41f",
-    "status": "QUEUED"
-  }
-  ```
-
-### 4. Fetch Submission Status & Verdict Breakdown
-- **Endpoint**: `GET /api/v1/submission/{id}`
-- **Response** (`200 OK`):
-  ```json
-  {
-    "submission_id": "bd207634-4d8e-451e-92a3-ad5f538ee41f",
-    "problem_id": "two-sum",
-    "language": "python",
-    "status": "COMPLETED",
-    "verdict": "AC",
-    "error_message": null,
-    "test_cases": [
-      {
-        "case_id": 1,
-        "verdict": "AC",
-        "time_ms": 124,
-        "memory_kb": 0,
-        "stdout": "",
-        "expected_output": null,
-        "error_message": null
-      }
-    ]
-  }
-  ```
+```
+online-judge/
+├── backend/
+│   ├── app/
+│   │   ├── main.py          # FastAPI app entry point
+│   │   ├── core/            # Config, security, database
+│   │   ├── judge/           # Problem listing, submission, verdict
+│   │   ├── compiler/        # Standalone compiler endpoint
+│   │   ├── auth/            # Login, register, Supabase OAuth sync
+│   │   └── user/            # Profile, heatmap, stats
+│   ├── problems/            # Problem YAML files (34+ problems)
+│   ├── scripts/             # Seed scripts
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── lib/
+│   │   │   ├── api.js       # apiUrl() — reads VITE_API_URL
+│   │   │   └── supabaseClient.js
+│   │   ├── pages/           # ProblemList, ProblemWorkspace, CompilerPage, ProfilePage
+│   │   └── components/      # AuthModal, etc.
+│   ├── vercel.json          # Vercel SPA rewrite rules
+│   └── .env.example         # Template for env vars
+├── docker-compose.yml       # Local dev (Postgres + Redis) — optional
+└── README.md
+```

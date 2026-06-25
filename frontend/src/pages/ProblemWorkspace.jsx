@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import Editor from '@monaco-editor/react'
+import { apiUrl } from '../lib/api'
 import {
   ArrowLeft, Play, Send, Loader2, CheckCircle2, XCircle,
   AlertCircle, Clock, Database, ChevronDown, ChevronRight,
@@ -138,7 +139,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
 
   /* ── Fetch problem ── */
   useEffect(() => {
-    fetch(`/api/v1/judge/problems/${problemId}`)
+    fetch(apiUrl(`/api/v1/judge/problems/${problemId}`))
       .then(r => { if (!r.ok) throw new Error('Problem not found'); return r.json() })
       .then(d => { setProblem(d); setLoading(false) })
       .catch(() => setLoading(false))
@@ -165,7 +166,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
   const handleRun = async () => {
     setRunning(true); setRunResult(null); setActivePanel('run')
     try {
-      const res = await fetch(`/api/v1/judge/problems/${problemId}/run`, {
+      const res = await fetch(apiUrl(`/api/v1/judge/problems/${problemId}/run`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ language, source_code: code, stdin: customInput }),
@@ -181,7 +182,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
 
   /* ── Submit ── */
   const pollSubmission = id => {
-    fetch(`/api/v1/judge/submissions/${id}`)
+    fetch(apiUrl(`/api/v1/judge/submissions/${id}`))
       .then(r => r.json())
       .then(data => {
         setSubmission(data)
@@ -207,7 +208,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    fetch(`/api/v1/judge/problems/${problemId}/submit`, {
+    fetch(apiUrl(`/api/v1/judge/problems/${problemId}/submit`), {
       method: 'POST',
       headers,
       body: JSON.stringify({ language, source_code: code }),

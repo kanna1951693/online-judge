@@ -3,6 +3,7 @@ import {
   ArrowLeft, Calendar, Trophy, Zap, Award, Search, 
   ExternalLink, CheckCircle, ChevronDown, Flame, BarChart3, HelpCircle 
 } from 'lucide-react'
+import { apiUrl } from '../lib/api'
 
 export default function ProfilePage({ userProfileHash, onBack, dark }) {
   const [profile, setProfile] = useState(null)
@@ -35,19 +36,19 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
         }
 
         // 1. Profile Stats
-        const profileRes = await fetch(`http://localhost:8000/api/v1/users/profile/${userProfileHash}`, { headers })
+        const profileRes = await fetch(apiUrl(`/api/v1/users/profile/${userProfileHash}`), { headers })
         if (!profileRes.ok) throw new Error('Failed to load profile')
         const profileData = await profileRes.json()
         setProfile(profileData)
 
         // 2. Tags
-        const tagsRes = await fetch(`http://localhost:8000/api/v1/users/profile/${userProfileHash}/tags`, { headers })
+        const tagsRes = await fetch(apiUrl(`/api/v1/users/profile/${userProfileHash}/tags`), { headers })
         if (!tagsRes.ok) throw new Error('Failed to load tag distribution')
         const tagsData = await tagsRes.json()
         setTags(tagsData)
 
         // 3. Solved List
-        const solvedRes = await fetch(`http://localhost:8000/api/v1/users/profile/${userProfileHash}/solved`, { headers })
+        const solvedRes = await fetch(apiUrl(`/api/v1/users/profile/${userProfileHash}/solved`), { headers })
         if (!solvedRes.ok) throw new Error('Failed to load solved problems')
         const solvedData = await solvedRes.json()
         setSolvedList(solvedData)
@@ -73,7 +74,7 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
         if (token) {
           headers['Authorization'] = `Bearer ${token}`
         }
-        const heatmapRes = await fetch(`http://localhost:8000/api/v1/users/profile/${userProfileHash}/heatmap?year=${selectedYear}`, { headers })
+        const heatmapRes = await fetch(apiUrl(`/api/v1/users/profile/${userProfileHash}/heatmap?year=${selectedYear}`), { headers })
         if (!heatmapRes.ok) throw new Error('Failed to load activity heatmap')
         const heatmapData = await heatmapRes.json()
         setHeatmap(heatmapData)

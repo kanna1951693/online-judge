@@ -3,6 +3,7 @@ import {
   Loader2, Server, Search, SlidersHorizontal, CheckCircle2,
   ChevronDown, X
 } from 'lucide-react'
+import { apiUrl } from '../lib/api'
 
 /* ── Difficulty styling ──────────────────────────────────────────────────── */
 const DIFF = {
@@ -121,7 +122,7 @@ export default function ProblemList({ onSelectProblem, user }) {
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    fetch('http://localhost:8000/api/v1/judge/problems', { headers })
+    fetch(apiUrl('/api/v1/judge/problems'), { headers })
       .then(res => {
         if (!res.ok) throw new Error('Failed to load challenges')
         return res.json()

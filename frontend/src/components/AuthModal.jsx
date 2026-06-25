@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { X, Mail, Lock, User, LogIn, UserPlus, Chrome, Sparkles } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
+import { apiUrl } from '../lib/api'
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [activeTab, setActiveTab] = useState('login')
@@ -17,7 +18,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     setError('')
     setLoading(true)
 
-    const endpoint = activeTab === 'login' ? '/api/v1/auth/login' : '/api/v1/auth/register'
+    const endpoint = apiUrl(activeTab === 'login' ? '/api/v1/auth/login' : '/api/v1/auth/register')
     const payload = activeTab === 'login'
       ? { email, password }
       : { username, email, password }

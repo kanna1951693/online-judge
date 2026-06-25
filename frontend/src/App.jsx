@@ -5,6 +5,7 @@ import CompilerPage from './pages/CompilerPage'
 import ProfilePage from './pages/ProfilePage'
 import AuthModal from './components/AuthModal'
 import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
+import { apiUrl } from './lib/api'
 import {
   Zap, LayoutList, Sun, Moon, Menu, X, User, LogOut, LogIn
 } from 'lucide-react'
@@ -130,7 +131,7 @@ export default function App() {
 
         try {
           setAuthSyncError('')
-          const res = await fetch('/api/v1/auth/supabase-login', {
+          const res = await fetch(apiUrl('/api/v1/auth/supabase-login'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ access_token: session.access_token }),

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
+import { apiUrl } from '../lib/api'
 import {
   Play, Loader2, Terminal, ChevronDown, ChevronRight,
   Copy, Check, RotateCcw, Zap, Clock, Cpu, FileText,
@@ -148,7 +149,7 @@ export default function CompilerPage({ dark }) {
   const handleRun = async () => {
     setRunning(true); setResult(null)
     try {
-      const res  = await fetch('/api/v1/compiler/run', {
+      const res  = await fetch(apiUrl('/api/v1/compiler/run'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ language, source_code: code, stdin }),

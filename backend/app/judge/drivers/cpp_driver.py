@@ -128,11 +128,21 @@ int main() {{
             name = p["name"]
             ptype = p["type"]
             cpp_type = resolve_type(ptype, "cpp")
-            
+
             if ptype == "ListNode":
                 driver_code += f"    ListNode* {name} = deserialize_list(data[\"{name}\"]);\n"
             elif ptype == "TreeNode":
                 driver_code += f"    TreeNode* {name} = deserialize_tree(data[\"{name}\"]);\n"
+            elif ptype == "List[int]":
+                driver_code += f"    vector<int> {name} = data[\"{name}\"].get<vector<int>>();\n"
+            elif ptype == "List[str]":
+                driver_code += f"    vector<string> {name} = data[\"{name}\"].get<vector<string>>();\n"
+            elif ptype == "List[float]":
+                driver_code += f"    vector<double> {name} = data[\"{name}\"].get<vector<double>>();\n"
+            elif ptype == "List[List[int]]":
+                driver_code += f"    vector<vector<int>> {name} = data[\"{name}\"].get<vector<vector<int>>>();\n"
+            elif ptype == "List[List[str]]":
+                driver_code += f"    vector<vector<string>> {name} = data[\"{name}\"].get<vector<vector<string>>>();\n"
             else:
                 driver_code += f"    {cpp_type} {name} = data[\"{name}\"].get<{cpp_type}>();\n"
 
@@ -144,19 +154,24 @@ int main() {{
     Solution sol;
     try {{
         auto result = sol.{func_name}({args_str});
-        json serialized_result;
 """
         ret_type = signature.return_type
         if ret_type == "ListNode":
-            driver_code += "        serialized_result = serialize_list(result);\n"
+            driver_code += "        json serialized_result = serialize_list(result);\n"
+            driver_code += "        cout << serialized_result.dump() << endl;\n"
         elif ret_type == "TreeNode":
-            driver_code += "        serialized_result = serialize_tree(result);\n"
+            driver_code += "        json serialized_result = serialize_tree(result);\n"
+            driver_code += "        cout << serialized_result.dump() << endl;\n"
+        elif ret_type == "bool":
+            driver_code += "        cout << (result ? \"true\" : \"false\") << endl;\n"
+        elif ret_type == "str":
+            driver_code += "        cout << result << endl;\n"
+        elif ret_type in ("int", "float"):
+            driver_code += "        cout << result << endl;\n"
         else:
-            driver_code += "        serialized_result = json(result);\n"
+            driver_code += "        cout << json(result).dump() << endl;\n"
 
-        driver_code += """
-        cout << serialized_result.dump() << endl;
-    } catch (exception& e) {
+        driver_code += """    } catch (exception& e) {
         cerr << "Execution exception: " << e.what() << endl;
         return 1;
     }

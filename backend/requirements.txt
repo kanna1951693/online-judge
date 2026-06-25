@@ -12,5 +12,6 @@ sqlalchemy>=2.0
 alembic
 psycopg2-binary
 # Auth (for password hashing)
-passlib[bcrypt]
+passlib
+bcrypt<=3.2.2
 python-jose[cryptography]

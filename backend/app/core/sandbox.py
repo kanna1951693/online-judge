@@ -288,11 +288,29 @@ class SandboxExecutor:
                     json_matched = False
                     try:
                         import json as std_json
-                        if std_json.loads(norm_out) == std_json.loads(norm_exp):
+                        val_out = std_json.loads(norm_out)
+                        val_exp = std_json.loads(norm_exp)
+
+                        def canonicalize(val):
+                            if not isinstance(val, list):
+                                return val
+                            new_val = []
+                            for item in val:
+                                if isinstance(item, list):
+                                    new_val.append(sorted([canonicalize(x) for x in item]))
+                                else:
+                                    new_val.append(item)
+                            try:
+                                new_val.sort(key=lambda x: str(x))
+                            except Exception:
+                                pass
+                            return new_val
+
+                        if val_out == val_exp or canonicalize(val_out) == canonicalize(val_exp):
                             json_matched = True
                     except Exception:
                         pass
-                    
+
                     if json_matched or norm_out == norm_exp:
                         result["verdict"] = "AC"
                     else:

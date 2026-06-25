@@ -145,11 +145,20 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
   }, [problemId])
 
+  /* ── Sync editor code with backend stubs ── */
+  useEffect(() => {
+    if (problem) {
+      if (problem.stubs && problem.stubs[language]) {
+        setCode(problem.stubs[language])
+      } else {
+        setCode(LANGUAGE_BOILERPLATES[language] || '')
+      }
+    }
+  }, [problem, language])
+
   /* ── Language switch ── */
   const handleLanguageChange = e => {
-    const lang = e.target.value
-    setLanguage(lang)
-    setCode(LANGUAGE_BOILERPLATES[lang])
+    setLanguage(e.target.value)
   }
 
   /* ── Run ── */

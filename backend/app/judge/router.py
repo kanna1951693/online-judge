@@ -11,6 +11,7 @@ from backend.app.judge.schemas import (
     SubmissionPayload, SubmissionResponse
 )
 from backend.app.judge import service
+from backend.app.judge.stubs import generate_stubs
 from backend.app.core.sandbox import SandboxExecutor
 from backend.app.db.models import ProblemMode, Verdict, User, Submission
 from backend.app.core.security import get_optional_current_user
@@ -68,6 +69,9 @@ def get_problem(slug: str, db: Session = Depends(get_db)):
     # Filter sample cases
     sample_cases = [tc for tc in prob.test_cases if tc.is_sample]
     
+    # Generate user-facing stubs if function signature is present
+    stubs = generate_stubs(prob.function_signature) if prob.function_signature else None
+
     # Construct response
     resp = ProblemDetailResponse(
         id=str(prob.id),
@@ -82,7 +86,8 @@ def get_problem(slug: str, db: Session = Depends(get_db)):
         sample_cases=sample_cases,
         function_signature=prob.function_signature,
         hints=prob.hints,
-        similar_questions=prob.similar_questions
+        similar_questions=prob.similar_questions,
+        stubs=stubs
     )
     return resp
 

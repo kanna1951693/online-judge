@@ -18,6 +18,11 @@ class GoogleLoginPayload(BaseModel):
     id_token: str  # The Google credential JWT
 
 
+class SupabaseLoginPayload(BaseModel):
+    """Receives a Supabase Auth access token (JWT)."""
+    access_token: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

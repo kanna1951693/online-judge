@@ -211,10 +211,12 @@ public class Solution {{
                 driver_code += "            System.out.println(serializeList(result).toString());\n"
             elif ret_type == "TreeNode":
                 driver_code += "            System.out.println(serializeTree(result).toString());\n"
-            elif ret_type in ["List[int]", "List[str]", "List[float]", "List[List[int]]"]:
+            elif ret_type in ["List[int]", "List[str]", "List[float]", "List[List[int]]", "List[List[str]]"]:
                 driver_code += "            System.out.println(new JSONArray(result).toString());\n"
             elif ret_type == "str":
                 driver_code += "            System.out.println(new JSONObject().put(\"res\", result).get(\"res\").toString());\n"
+            elif ret_type == "bool":
+                driver_code += "            System.out.println(result);\n"
             else:
                 driver_code += "            System.out.println(String.valueOf(result));\n"
             

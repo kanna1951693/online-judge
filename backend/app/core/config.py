@@ -51,6 +51,7 @@ class Settings(BaseSettings):
 
     # Auth / JWT
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "apexjudge-dev-secret-key-change-in-prod")
+    SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "supabase-jwt-secret-placeholder-for-dev-only")
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRY_HOURS: int = 72
 

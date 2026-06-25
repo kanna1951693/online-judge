@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { X, Mail, Lock, User, LogIn, UserPlus, Chrome, Sparkles } from 'lucide-react'
+import { supabase } from '../lib/supabaseClient'
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [activeTab, setActiveTab] = useState('login') // 'login' | 'register' | 'google-sim'
@@ -43,6 +44,23 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     } catch (err) {
       setError(err.message)
     } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSupabaseGoogleLogin = async () => {
+    setError('')
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      })
+      if (error) throw error
+    } catch (err) {
+      setError(err.message)
       setLoading(false)
     }
   }
@@ -206,14 +224,27 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             </div>
 
             {/* Google Authentication Options */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('google-sim')}
-              className="w-full bg-[var(--bg-elevated)] hover:bg-[var(--border)] border border-[var(--border)] text-[var(--text-primary)] py-3 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2 hover:shadow-sm"
-            >
-              <Chrome className="w-4 h-4 text-rose-500" />
-              Sign in with Google (Dev Connect)
-            </button>
+            <div className="flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={handleSupabaseGoogleLogin}
+                disabled={loading}
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2 shadow-md shadow-indigo-500/10 disabled:opacity-50"
+              >
+                <Chrome className="w-4 h-4 text-white" />
+                Sign in with Google
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('google-sim')}
+                disabled={loading}
+                className="w-full bg-[var(--bg-elevated)] hover:bg-[var(--border)] border border-[var(--border)] text-[var(--text-primary)] py-3 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2 hover:shadow-sm disabled:opacity-50"
+              >
+                <Chrome className="w-4 h-4 text-rose-500" />
+                Sign in with Google (Dev Connect)
+              </button>
+            </div>
           </form>
         ) : (
           /* Google Sim Sub-Form */

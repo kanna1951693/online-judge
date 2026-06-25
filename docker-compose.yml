@@ -48,6 +48,7 @@ services:
       - PROBLEMS_JSON_PATH=/app/backend/app/problems.json
       - PROBLEMS_DIR=/app/backend/problems
       - DOCKER_HOST=unix:///var/run/docker.sock
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-supabase-jwt-secret-placeholder-for-dev-only}
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock
@@ -72,6 +73,7 @@ services:
       - PROBLEMS_JSON_PATH=/app/backend/app/problems.json
       - PROBLEMS_DIR=/app/backend/problems
       - DOCKER_HOST=unix:///var/run/docker.sock
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-supabase-jwt-secret-placeholder-for-dev-only}
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock

@@ -54,6 +54,7 @@ class ProblemDetailResponse(BaseModel):
     function_signature: Optional[FunctionSignatureResponse] = None
     hints: List[str] = []
     similar_questions: List[Dict[str, Any]] = []
+    stubs: Optional[Dict[str, str]] = None
 
     class Config:
         from_attributes = True

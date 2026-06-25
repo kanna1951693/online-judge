@@ -128,6 +128,20 @@ def __driver_main():
             driver_code += "    serialized_result = serialize_list(result)\n"
         elif ret_type == "TreeNode":
             driver_code += "    serialized_result = serialize_tree(result)\n"
+        elif ret_type == "bool":
+            # Output canonical lowercase json bool string: true / false
+            driver_code += "    serialized_result = str(result).lower()\n"
+            driver_code += "    print(serialized_result)\n"
+            driver_code += "    return\n"
+        elif ret_type == "str":
+            # Output raw string (not JSON-quoted)
+            driver_code += "    serialized_result = result\n"
+            driver_code += "    print(serialized_result)\n"
+            driver_code += "    return\n"
+        elif ret_type in ("int", "float"):
+            driver_code += "    serialized_result = result\n"
+            driver_code += "    print(serialized_result)\n"
+            driver_code += "    return\n"
         else:
             driver_code += "    serialized_result = result\n"
 

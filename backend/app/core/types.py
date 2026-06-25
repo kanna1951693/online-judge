@@ -39,6 +39,11 @@ CANONICAL_TYPES = {
         "cpp": "vector<vector<int>>",
         "java": "int[][]"
     },
+    "List[List[str]]": {
+        "python": "List[List[str]]",
+        "cpp": "vector<vector<string>>",
+        "java": "String[][]"
+    },
     "ListNode": {
         "python": "ListNode",
         "cpp": "ListNode*",

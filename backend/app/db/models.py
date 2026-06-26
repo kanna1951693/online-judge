@@ -232,3 +232,32 @@ class SubmissionResult(Base):
 
     # Relationships
     submission: Mapped["Submission"] = relationship("Submission", back_populates="results")
+
+class CodeDraft(Base):
+    """Persists a user's in-progress code per problem+language."""
+    __tablename__ = "code_drafts"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    problem_slug: Mapped[str] = mapped_column(String(128), nullable=False)
+    language: Mapped[str] = mapped_column(String(16), nullable=False)
+    code: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship("User")

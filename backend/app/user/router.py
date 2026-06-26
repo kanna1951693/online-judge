@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, func, and_, extract
 
 from backend.app.core.database import get_db
-from backend.app.db.models import User, Submission, Problem, Verdict
+from backend.app.db.models import User, Submission, Problem, Verdict, CodeDraft
+from backend.app.core.security import get_current_user
 
 router = APIRouter()
 
@@ -29,6 +30,7 @@ class ProfileResponse(BaseModel):
     medium_solved: int
     hard_solved: int
     total_submissions: int
+    accuracy: float
 
 
 class HeatmapDay(BaseModel):
@@ -100,6 +102,14 @@ def get_profile(profile_hash: str, db: Session = Depends(get_db)):
         select(func.count(Submission.id)).where(Submission.user_id == user.id)
     ) or 0
 
+    ac_submissions = db.scalar(
+        select(func.count(Submission.id)).where(
+            and_(Submission.user_id == user.id, Submission.verdict == Verdict.AC)
+        )
+    ) or 0
+
+    accuracy = round((ac_submissions / total_submissions) * 100, 1) if total_submissions > 0 else 0.0
+
     return ProfileResponse(
         username=user.username,
         email=user.email,
@@ -111,6 +121,7 @@ def get_profile(profile_hash: str, db: Session = Depends(get_db)):
         medium_solved=medium,
         hard_solved=hard,
         total_submissions=total_submissions,
+        accuracy=accuracy,
     )
 
 
@@ -252,3 +263,79 @@ def get_solved_problems(profile_hash: str, db: Session = Depends(get_db)):
         )
         for r in rows
     ]
+
+
+# ── Code Drafts ───────────────────────────────────────────────────────────────
+
+class DraftSavePayload(BaseModel):
+    problem_slug: str
+    language: str
+    code: str
+
+
+class DraftResponse(BaseModel):
+    problem_slug: str
+    language: str
+    code: str
+
+
+@router.put("/draft", response_model=DraftResponse)
+def save_draft(
+    payload: DraftSavePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Upsert the user's in-progress code draft for a given problem + language."""
+    draft = db.scalar(
+        select(CodeDraft).where(
+            and_(
+                CodeDraft.user_id == current_user.id,
+                CodeDraft.problem_slug == payload.problem_slug,
+                CodeDraft.language == payload.language,
+            )
+        )
+    )
+    if draft:
+        draft.code = payload.code
+        draft.updated_at = func.now()
+    else:
+        draft = CodeDraft(
+            user_id=current_user.id,
+            problem_slug=payload.problem_slug,
+            language=payload.language,
+            code=payload.code,
+        )
+        db.add(draft)
+    db.commit()
+    db.refresh(draft)
+    return DraftResponse(
+        problem_slug=draft.problem_slug,
+        language=draft.language,
+        code=draft.code,
+    )
+
+
+@router.get("/draft/{problem_slug}/{language}", response_model=DraftResponse)
+def get_draft(
+    problem_slug: str,
+    language: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Fetch the user's saved draft for a given problem + language. Returns 404 if none."""
+    draft = db.scalar(
+        select(CodeDraft).where(
+            and_(
+                CodeDraft.user_id == current_user.id,
+                CodeDraft.problem_slug == problem_slug,
+                CodeDraft.language == language,
+            )
+        )
+    )
+    if not draft:
+        raise HTTPException(status_code=404, detail="No draft found")
+    return DraftResponse(
+        problem_slug=draft.problem_slug,
+        language=draft.language,
+        code=draft.code,
+    )

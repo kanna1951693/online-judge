@@ -249,7 +249,7 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] grid grid-cols-2 gap-4">
+            <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] grid grid-cols-3 gap-4">
               <div>
                 <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Member Since</p>
                 <p className="text-sm font-semibold text-[var(--text-primary)] mt-0.5">{profile.member_since}</p>
@@ -257,6 +257,12 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
               <div>
                 <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Total Attempts</p>
                 <p className="text-sm font-semibold text-[var(--text-primary)] mt-0.5">{profile.total_submissions}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Accuracy</p>
+                <p className="text-sm font-semibold mt-0.5" style={{ color: profile.accuracy >= 70 ? 'var(--color-emerald, #10b981)' : profile.accuracy >= 40 ? '#f59e0b' : '#ef4444' }}>
+                  {profile.accuracy}%
+                </p>
               </div>
             </div>
           </div>

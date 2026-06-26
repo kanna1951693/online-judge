@@ -1,235 +1,36 @@
-# ApexJudge: A Sandboxed Online Judge
+# ApexJudge — Sandboxed Online Judge Platform
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white)](https://online-judge-owlksiijn-kunal-s-projects26.vercel.app/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
-[![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://cloudflare.com)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
+[![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
 
-**ApexJudge** is a secure, sandboxed online judge that evaluates user-submitted C++, Python, and Java code in real-time. Code is isolated inside Docker containers enforcing strict cgroup resource limits (CPU, memory, PID, network).
+**ApexJudge** is a full-stack competitive programming platform where users solve 34+ algorithmic problems in C++, Python, and Java. Every submission runs in a disposable Docker sandbox with strict Linux cgroup resource limits, graded asynchronously through a Redis queue, and results are returned in real-time.
 
-🌐 **Live at:** https://online-judge-owlksiijn-kunal-s-projects26.vercel.app/
-
----
-
-## 🏗️ Deployment Architecture
-
-```
-Browser (Vercel CDN)
-        │
-        │  HTTPS (Cloudflare Tunnel URL — set as VITE_API_URL in Vercel)
-        ▼
-FastAPI Backend (localhost:8000)   ←── Cloudflared tunnel exposes this
-        │                                to the public internet
-        ├── Supabase Postgres (cloud DB, 34+ problems seeded)
-        ├── Docker Engine (sandboxed code execution)
-        └── Google OAuth via Supabase Auth
-```
-
-- **Frontend**: React + Vite, deployed on **Vercel**
-- **Backend**: FastAPI, runs **locally** and exposed via **Cloudflare Tunnel**
-- **Database**: **Supabase Postgres** (hosted, always-on)
-- **Auth**: **Supabase Google OAuth**
-- **Sandboxing**: Local **Docker** containers (must be running)
+🌐 **Live:** https://online-judge-owlksiijn-kunal-s-projects26.vercel.app/
 
 ---
 
-## 🏗️ System Architecture
+## ✨ Features
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as User / Candidate
-    participant FE as React Frontend (Vercel)
-    participant CF as Cloudflare Tunnel
-    participant BE as FastAPI Backend (local)
-    participant DB as Supabase Postgres
-    participant DK as Docker Sandbox
+### 🧠 Problem Solving
+- **34+ curated problems** across Easy, Medium, and Hard difficulty
+- Problems support two modes: **function-mode** (auto-wrapped driver code) and **stdin-mode**
+- Tag-based filtering (Arrays, Trees, DP, Graphs, etc.)
+- Per-problem hints and similar question suggestions
+- Monaco Editor with syntax highlighting for C++, Python, and Java
 
-    User->>FE: Submits code
-    FE->>CF: POST /api/v1/judge/problems/{slug}/submit
-    CF->>BE: Forwards request (tunnel)
-    BE->>DB: Save submission record
-    BE-->>FE: { submission_id, status: QUEUED }
+### ⚡ Code Execution & Judging
+- **Run** code against custom input instantly (no verdict, just output)
+- **Submit** code for full test-case evaluation with per-case pass/fail breakdown
+- Verdicts: `AC` · `WA` · `TLE` · `MLE` · `RE` · `CE`
+- Async grading via **Redis queue** — API returns immediately, frontend polls for result
+- Per-problem **time limit** (default 2s) and **memory limit** (256MB)
 
-    FE->>CF: Poll GET /api/v1/judge/submissions/{id}
-    BE->>DK: Spin up isolated container, run test cases
-    DK-->>BE: Exit code, stdout, time, memory
-    BE->>DB: Store verdict
-    BE-->>FE: Verdict (AC / WA / TLE / MLE / RE)
-    FE->>User: Color-coded test results
-```
-
----
-
-## 🚀 How to Run (Local Backend + Vercel Frontend)
-
-This project uses a **split deployment**: the frontend is on Vercel, but the backend runs on your local machine and is exposed via a Cloudflare Tunnel.
-
-### Prerequisites
-
-- macOS with [Homebrew](https://brew.sh)
-- Python 3.11+
-- Node.js 18+
-- Docker Desktop (running)
-- `cloudflared` CLI: `brew install cloudflared`
-
----
-
-### Step 1 — Clone & Install
-
-```bash
-git clone https://github.com/kanna1951693/online-judge.git
-cd online-judge
-
-# Backend dependencies
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-cd ..
-
-# Frontend dependencies
-cd frontend
-npm install
-cd ..
-```
-
----
-
-### Step 2 — Configure Backend Environment
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-Edit `backend/.env` and fill in your real values:
-
-```env
-# Supabase Postgres connection string (Session pooler, port 5432)
-DATABASE_URL=postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
-
-# Supabase project credentials
-SUPABASE_URL=https://[PROJECT-REF].supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_JWT_SECRET=your-jwt-secret
-```
-
----
-
-### Step 3 — Start Docker Desktop
-
-Open **Docker Desktop** from your Applications folder. Wait until the whale icon in the menu bar stops animating (it's ready).
-
-> **To stop Docker later:** Click the whale icon in the menu bar → **Quit Docker Desktop**, or press `Cmd+Q` while Docker Desktop is in focus.
-> Docker will stop all running containers. Your data is safe — the database is in Supabase cloud, not in Docker.
-
----
-
-### Step 4 — Start the Backend Server
-
-From the **repo root** (not inside `backend/`):
-
-```bash
-cd /path/to/online-judge
-source backend/venv/bin/activate
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
-```
-
-Verify it's working:
-```bash
-curl http://localhost:8000/
-# → {"status":"ok","message":"ApexJudge Backend API running."}
-```
-
----
-
-### Step 5 — Start the Cloudflare Tunnel
-
-Open a **second terminal** and run:
-
-```bash
-cloudflared tunnel --url http://localhost:8000
-```
-
-You'll see output like:
-```
-Your quick Tunnel has been created! Visit it at:
-https://abc-xyz-example.trycloudflare.com
-```
-
-**Copy that URL** — it changes every time you restart the tunnel.
-
----
-
-### Step 6 — Update Vercel Environment Variable
-
-1. Go to [Vercel Dashboard](https://vercel.com/dashboard) → your project → **Settings → Environment Variables**
-2. Update (or create) these variables:
-
-   | Variable | Value |
-   |----------|-------|
-   | `VITE_API_URL` | `https://abc-xyz-example.trycloudflare.com` ← your tunnel URL |
-   | `VITE_SUPABASE_URL` | `https://[project-ref].supabase.co` |
-   | `VITE_SUPABASE_ANON_KEY` | your Supabase anon key |
-
-3. Go to **Deployments** → click the three-dot menu on the latest deployment → **Redeploy**
-
-> ⚠️ You need to **redeploy on Vercel every time the tunnel URL changes** (i.e., every time you restart `cloudflared`).
-
----
-
-### Step 7 — Done! Test the full flow
-
-Visit the live URL and verify:
-
-- [ ] Problem list loads (34+ problems)
-- [ ] Click a problem → workspace opens
-- [ ] Google login works (via Supabase Auth)
-- [ ] Run code → output appears
-- [ ] Submit → verdict (AC / WA / TLE) shown
-- [ ] Standalone Compiler page works
-
----
-
-## 🔄 Daily Workflow (Reopening After a Break)
-
-```bash
-# 1. Open Docker Desktop (from Applications or Spotlight)
-#    Wait for the whale icon to stop animating
-
-# 2. Start the backend (from repo root)
-source backend/venv/bin/activate
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
-
-# 3. Start the tunnel (in a separate terminal)
-cloudflared tunnel --url http://localhost:8000
-# Copy the new tunnel URL (it changes every restart)
-
-# 4. Update VITE_API_URL in Vercel dashboard with the new URL
-#    Then: Vercel → Deployments → Redeploy
-
-# 5. Visit https://online-judge-owlksiijn-kunal-s-projects26.vercel.app/
-```
-
----
-
-## 🛑 Stopping Everything
-
-| Component | How to Stop |
-|-----------|-------------|
-| **Backend** (`uvicorn`) | Press `Ctrl+C` in its terminal |
-| **Cloudflare Tunnel** | Press `Ctrl+C` in its terminal |
-| **Docker Desktop** | Menu bar whale icon → **Quit Docker Desktop** (or `Cmd+Q`) |
-
-> Stopping Docker also stops all running sandbox containers. The Supabase cloud database is unaffected.
-
----
-
-## 🔒 Security & Sandboxing
-
-Every code submission runs inside a **disposable Docker container** with:
+### 🔒 Sandboxed Execution
+Every submission runs inside a **disposable Docker container** with:
 
 | Limit | Value | Enforced By |
 |-------|-------|-------------|
@@ -240,17 +41,173 @@ Every code submission runs inside a **disposable Docker container** with:
 | Filesystem | Read-only | `docker --read-only` |
 | Wall-clock timeout | Per-problem (default 2s) | Host watchdog thread |
 
+### 💾 Code Draft Persistence
+- Code is **saved instantly** to `localStorage` on every keystroke
+- For logged-in users, code is **debounce-synced to Supabase** after 8 seconds of inactivity
+- Drafts are restored automatically when returning to a problem (per language)
+
+### 👤 User Profiles
+- **Activity heatmap** — GitHub-style daily submission frequency grid
+- **Streak tracking** — current streak and max streak (in days)
+- **Accuracy** — percentage of submissions that received AC verdict
+- **Difficulty breakdown** — Easy / Medium / Hard solved counts with progress bars
+- **Tag distribution** — bubble chart showing solved vs total per topic
+- **Solved problems list** — filterable by difficulty and title
+
+### 🔐 Authentication
+- **Google OAuth** via Supabase Auth (one-click sign-in)
+- **Email/password** login and registration
+- JWT-based session with support for both local JWTs and Supabase JWTs
+
+### 🖥️ Standalone Compiler
+- A full **code playground** page (no problem required)
+- Run any C++, Python, or Java code against custom stdin
+- Useful for quick experiments without creating a submission
+
+---
+
+## 🏗️ System Architecture
+
+```
+Browser (Vercel CDN)
+        │
+        │  HTTPS via Cloudflare Tunnel (VITE_API_URL)
+        ▼
+FastAPI Backend (localhost:8000)
+        │
+        ├── Supabase Postgres  ← users, problems, submissions, drafts
+        ├── Redis Queue        ← async submission jobs
+        ├── Docker Engine      ← sandboxed code execution
+        └── Supabase Auth      ← Google OAuth + JWT validation
+```
+
+### Submission Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant FE as React Frontend
+    participant BE as FastAPI Backend
+    participant RQ as Redis Queue
+    participant DK as Docker Sandbox
+    participant DB as Supabase Postgres
+
+    User->>FE: Writes code, clicks Submit
+    FE->>BE: POST /api/v1/judge/problems/{slug}/submit
+    BE->>DB: Insert submission (status: PENDING)
+    BE->>RQ: Push job payload
+    BE-->>FE: { submission_id, status: QUEUED }
+
+    FE->>BE: Poll GET /api/v1/judge/submissions/{id}
+    RQ->>BE: Worker picks up job
+    BE->>DK: Spin up isolated container per test case
+    DK-->>BE: stdout, exit code, time_ms, memory_kb
+    BE->>DB: Save verdict + per-case results
+    BE-->>FE: { status: COMPLETED, verdict: AC/WA/TLE... }
+    FE-->>User: Color-coded results with per-case breakdown
+```
+
+---
+
+## 🗄️ Database Schema
+
+```mermaid
+erDiagram
+    users {
+        uuid id PK
+        string username
+        string email
+        string password_hash
+        string supabase_auth_id
+        string profile_hash
+        timestamp created_at
+    }
+
+    problems {
+        uuid id PK
+        string slug
+        string title
+        text statement
+        enum difficulty
+        enum mode
+        int time_limit_ms
+        int memory_limit_kb
+        string[] tags
+        string[] programs
+        string[] hints
+        jsonb similar_questions
+        timestamp created_at
+    }
+
+    function_signatures {
+        uuid id PK
+        uuid problem_id FK
+        string function_name
+        jsonb params
+        string return_type
+    }
+
+    test_cases {
+        uuid id PK
+        uuid problem_id FK
+        text input
+        text expected_output
+        bool is_sample
+        int display_order
+    }
+
+    submissions {
+        uuid id PK
+        uuid user_id FK
+        uuid problem_id FK
+        enum language
+        text source_code
+        enum verdict
+        timestamp submitted_at
+    }
+
+    submission_results {
+        uuid id PK
+        uuid submission_id FK
+        uuid test_case_id FK
+        bool passed
+        text actual_output
+        int runtime_ms
+        int memory_kb
+        text error_message
+    }
+
+    code_drafts {
+        uuid id PK
+        uuid user_id FK
+        string problem_slug
+        string language
+        text code
+        timestamp updated_at
+    }
+
+    users ||--o{ submissions : "makes"
+    users ||--o{ code_drafts : "saves"
+    problems ||--o{ test_cases : "has"
+    problems ||--|| function_signatures : "has"
+    problems ||--o{ submissions : "receives"
+    submissions ||--o{ submission_results : "produces"
+    test_cases ||--o{ submission_results : "evaluated by"
+```
+
 ---
 
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
+|-------|------------|
 | Frontend | React 18, Vite, Tailwind CSS, Monaco Editor |
-| Backend | Python 3.11+, FastAPI, SQLAlchemy, Alembic |
+| Backend | Python 3.11, FastAPI, SQLAlchemy, Alembic |
 | Database | Supabase Postgres (hosted) |
-| Auth | Supabase Google OAuth |
-| Sandboxing | Docker Engine (`docker-py`) |
+| Auth | Supabase Google OAuth + JWT |
+| Queue | Redis (async submission grading) |
+| Sandboxing | Docker Engine via `docker-py` |
 | Tunnel | Cloudflare Tunnel (`cloudflared`) |
 | Deployment | Vercel (frontend) |
 
@@ -260,18 +217,23 @@ Every code submission runs inside a **disposable Docker container** with:
 
 Base URL: `https://[your-tunnel-url].trycloudflare.com`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/judge/problems` | List all problems |
-| `GET` | `/api/v1/judge/problems/{slug}` | Problem detail + sample cases |
-| `POST` | `/api/v1/judge/problems/{slug}/run` | Run code (custom input, no verdict) |
-| `POST` | `/api/v1/judge/problems/{slug}/submit` | Submit for grading |
-| `GET` | `/api/v1/judge/submissions/{id}` | Submission verdict + test results |
-| `POST` | `/api/v1/compiler/run` | Standalone compiler (any code, no problem) |
-| `POST` | `/api/v1/auth/login` | Email/password login |
-| `POST` | `/api/v1/auth/register` | Email/password register |
-| `POST` | `/api/v1/auth/supabase-login` | Exchange Supabase OAuth token |
-| `GET` | `/api/v1/users/profile/{hash}` | User profile + stats |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/judge/problems` | — | List all problems |
+| `GET` | `/api/v1/judge/problems/{slug}` | — | Problem detail + sample cases + stubs |
+| `POST` | `/api/v1/judge/problems/{slug}/run` | — | Run code against custom input |
+| `POST` | `/api/v1/judge/problems/{slug}/submit` | Optional | Submit for full grading |
+| `GET` | `/api/v1/judge/submissions/{id}` | — | Poll submission verdict |
+| `POST` | `/api/v1/compiler/run` | — | Standalone compiler |
+| `POST` | `/api/v1/auth/register` | — | Email/password registration |
+| `POST` | `/api/v1/auth/login` | — | Email/password login |
+| `POST` | `/api/v1/auth/supabase-login` | — | Exchange Supabase OAuth token |
+| `GET` | `/api/v1/users/profile/{hash}` | — | User profile + stats |
+| `GET` | `/api/v1/users/profile/{hash}/heatmap` | — | Activity heatmap + streaks |
+| `GET` | `/api/v1/users/profile/{hash}/tags` | — | Tag distribution |
+| `GET` | `/api/v1/users/profile/{hash}/solved` | — | Solved problems list |
+| `GET` | `/api/v1/users/draft/{slug}/{lang}` | ✅ | Load saved code draft |
+| `PUT` | `/api/v1/users/draft` | ✅ | Save code draft |
 
 ---
 
@@ -281,24 +243,32 @@ Base URL: `https://[your-tunnel-url].trycloudflare.com`
 online-judge/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py          # FastAPI app entry point
-│   │   ├── core/            # Config, security, database
-│   │   ├── judge/           # Problem listing, submission, verdict
-│   │   ├── compiler/        # Standalone compiler endpoint
-│   │   ├── auth/            # Login, register, Supabase OAuth sync
-│   │   └── user/            # Profile, heatmap, stats
-│   ├── problems/            # Problem YAML files (34+ problems)
-│   ├── scripts/             # Seed scripts
+│   │   ├── main.py            # FastAPI app entry point + router registration
+│   │   ├── core/              # Config, security (JWT), database session
+│   │   ├── judge/             # Problem listing, submission, verdict, drivers
+│   │   ├── compiler/          # Standalone compiler endpoint
+│   │   ├── auth/              # Register, login, Supabase OAuth sync
+│   │   └── user/              # Profile, heatmap, stats, code drafts
+│   ├── problems/              # Problem YAML files (34+ problems)
+│   ├── scripts/               # DB seed scripts
 │   └── requirements.txt
 ├── frontend/
-│   ├── src/
-│   │   ├── lib/
-│   │   │   ├── api.js       # apiUrl() — reads VITE_API_URL
-│   │   │   └── supabaseClient.js
-│   │   ├── pages/           # ProblemList, ProblemWorkspace, CompilerPage, ProfilePage
-│   │   └── components/      # AuthModal, etc.
-│   ├── vercel.json          # Vercel SPA rewrite rules
-│   └── .env.example         # Template for env vars
-├── docker-compose.yml       # Local dev (Postgres + Redis) — optional
-└── README.md
+│   └── src/
+│       ├── pages/             # ProblemList, ProblemWorkspace, CompilerPage, ProfilePage
+│       ├── components/        # AuthModal, etc.
+│       └── lib/               # apiUrl(), supabaseClient
+├── alembic/                   # Database migrations
+├── docs/
+│   ├── SETUP.md               # Local setup & run guide
+│   └── DEPLOYMENT.md          # Deployment reference
+└── docker-compose.yml         # Local dev (Postgres + Redis) — optional
 ```
+
+---
+
+## 📖 Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [docs/SETUP.md](docs/SETUP.md) | Step-by-step local setup and daily workflow |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment architecture reference |

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Editor from '@monaco-editor/react'
 import { apiUrl } from '../lib/api'
 import {
@@ -135,7 +135,9 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
 
   const [activePanel, setActivePanel] = useState('run')
 
-  const pollRef = useRef(null)
+  const pollRef    = useRef(null)
+  const draftTimer  = useRef(null)  // debounce handle for cloud draft save
+  const [draftSaved, setDraftSaved] = useState(false) // shows "Draft saved" toast
 
   /* ── Fetch problem ── */
   useEffect(() => {
@@ -146,16 +148,78 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
   }, [problemId])
 
-  /* ── Sync editor code with backend stubs ── */
+  /* ── Load draft: API first (logged-in), else localStorage ── */
   useEffect(() => {
-    if (problem) {
-      if (problem.stubs && problem.stubs[language]) {
+    if (!problem) return
+
+    const token = localStorage.getItem('token')
+    const localKey = `code__${problemId}__${language}`
+
+    if (token) {
+      // Fetch cloud draft — falls back to localStorage then stub/boilerplate
+      fetch(apiUrl(`/api/v1/users/draft/${problemId}/${language}`), {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(r => {
+          if (r.ok) return r.json()
+          // 404 = no cloud draft yet, fall through to localStorage
+          return null
+        })
+        .then(data => {
+          if (data && data.code) {
+            setCode(data.code)
+          } else {
+            // no cloud draft — try localStorage
+            const saved = localStorage.getItem(localKey)
+            if (saved !== null) {
+              setCode(saved)
+            } else if (problem.stubs && problem.stubs[language]) {
+              setCode(problem.stubs[language])
+            } else {
+              setCode(LANGUAGE_BOILERPLATES[language] || '')
+            }
+          }
+        })
+        .catch(() => {
+          const saved = localStorage.getItem(localKey)
+          setCode(saved ?? (problem.stubs?.[language] || LANGUAGE_BOILERPLATES[language] || ''))
+        })
+    } else {
+      // Not logged in — use localStorage only
+      const saved = localStorage.getItem(localKey)
+      if (saved !== null) {
+        setCode(saved)
+      } else if (problem.stubs && problem.stubs[language]) {
         setCode(problem.stubs[language])
       } else {
         setCode(LANGUAGE_BOILERPLATES[language] || '')
       }
     }
   }, [problem, language])
+
+  /* ── Save draft to cloud after 8s of inactivity (logged-in users only) ── */
+  const saveDraftToCloud = useCallback((slug, lang, value) => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+    fetch(apiUrl('/api/v1/users/draft'), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ problem_slug: slug, language: lang, code: value }),
+    })
+      .then(r => { if (r.ok) { setDraftSaved(true); setTimeout(() => setDraftSaved(false), 2500) } })
+      .catch(() => {})
+  }, [])
+
+  /* ── Persist code: localStorage immediately + debounce 8s to cloud ── */
+  const handleCodeChange = (value) => {
+    setCode(value)
+    const localKey = `code__${problemId}__${language}`
+    localStorage.setItem(localKey, value)
+
+    // Debounce cloud save
+    if (draftTimer.current) clearTimeout(draftTimer.current)
+    draftTimer.current = setTimeout(() => saveDraftToCloud(problemId, language, value), 8000)
+  }
 
   /* ── Language switch ── */
   const handleLanguageChange = e => {
@@ -413,6 +477,13 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
 
           <Stopwatch />
 
+          {/* Draft saved toast */}
+          {draftSaved && (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 animate-pulse px-2">
+              ✓ Draft saved
+            </span>
+          )}
+
           {/* Action buttons */}
           <div className="flex items-center gap-2">
             <button
@@ -453,7 +524,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
             language={LANGUAGE_MONACO[language]}
             theme={monacoTheme}
             value={code}
-            onChange={val => setCode(val || '')}
+            onChange={val => handleCodeChange(val || '')}
             options={{
               minimap: { enabled: false },
               fontSize: 13,

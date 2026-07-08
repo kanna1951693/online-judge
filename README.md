@@ -1,6 +1,6 @@
 # ApexJudge — Sandboxed Online Judge Platform
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white)](https://online-judge-owlksiijn-kunal-s-projects26.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white)](https://frontend-iota-eosin-36.vercel.app)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
@@ -9,7 +9,7 @@
 
 **ApexJudge** is a full-stack competitive programming platform where users solve 34+ algorithmic problems in C++, Python, and Java. Every submission runs in a disposable Docker sandbox with strict Linux cgroup resource limits, graded asynchronously through a Redis queue, and results are returned in real-time.
 
-🌐 **Live:** https://online-judge-owlksiijn-kunal-s-projects26.vercel.app/
+🌐 **Live:** https://frontend-iota-eosin-36.vercel.app
 
 ---
 

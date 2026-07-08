@@ -6,45 +6,45 @@
 
 /* ── CSS custom properties — dual-theme token layer ── */
 :root {
-  /* Light mode tokens */
-  --bg-base:        #f8fafc;
-  --bg-surface:     #ffffff;
-  --bg-elevated:    #f1f5f9;
-  --bg-overlay:     rgba(0,0,0,0.04);
-  --border:         #e2e8f0;
-  --border-subtle:  #f1f5f9;
-  --text-primary:   #0f172a;
-  --text-secondary: #475569;
-  --text-muted:     #94a3b8;
-  --accent:         #6366f1;
-  --accent-subtle:  #eef2ff;
+  /* ── Light mode: Bone base → Floral White surfaces ── */
+  --bg-base:        #D8CFBC;   /* Bone — page background */
+  --bg-surface:     #EDE7DB;   /* mid warm tone — panels  */
+  --bg-elevated:    #FFFBF4;   /* Floral White — cards    */
+  --bg-overlay:     rgba(86,84,73,0.06);
+  --border:         #bfb8a8;   /* slightly darker than Bone */
+  --border-subtle:  #d0c9b8;
+  --text-primary:   #11120D;   /* Smoky Black */
+  --text-secondary: #565449;   /* Olive Drab  */
+  --text-muted:     #8c8779;
+  --accent:         #5b5ef5;
+  --accent-subtle:  rgba(91,94,245,0.10);
   --accent-hover:   #4f46e5;
-  --success:        #22c55e;
-  --error:          #ef4444;
-  --warning:        #f59e0b;
-  --scrollbar-track:#e2e8f0;
-  --scrollbar-thumb:#cbd5e1;
+  --success:        #16a34a;
+  --error:          #dc2626;
+  --warning:        #d97706;
+  --scrollbar-track:#D8CFBC;
+  --scrollbar-thumb:#bfb8a8;
 }
 
 .dark {
-  /* Dark mode tokens */
-  --bg-base:        #020617;
-  --bg-surface:     #0f172a;
-  --bg-elevated:    #1e293b;
-  --bg-overlay:     rgba(255,255,255,0.03);
-  --border:         #1e293b;
-  --border-subtle:  #0f172a;
-  --text-primary:   #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted:     #475569;
-  --accent:         #818cf8;
-  --accent-subtle:  rgba(99,102,241,0.12);
-  --accent-hover:   #6366f1;
+  /* ── Dark mode: Deep Blue base → Black surfaces ── */
+  --bg-base:        #0C2E3D;   /* Dark Blue base — page background */
+  --bg-surface:     #07212c;   /* mid tone — panels                */
+  --bg-elevated:    #000101;   /* Black — cards                    */
+  --bg-overlay:     rgba(0,0,0,0.2);
+  --border:         #186784;   /* Ocean Teal border                */
+  --border-subtle:  #0C2E3D;
+  --text-primary:   #DAC6B6;   /* Warm linen off-white             */
+  --text-secondary: #C0A088;   /* Warm light beige                 */
+  --text-muted:     #9A7C65;   /* Muted warm brown                 */
+  --accent:         #186784;   /* Ocean Teal                       */
+  --accent-subtle:  rgba(24,103,132,0.15);
+  --accent-hover:   #2282a5;
   --success:        #4ade80;
   --error:          #f87171;
   --warning:        #fbbf24;
-  --scrollbar-track:#0f172a;
-  --scrollbar-thumb:#1e293b;
+  --scrollbar-track:#07212c;
+  --scrollbar-thumb:#186784;
 }
 
 /* ── Base resets ── */
@@ -156,3 +156,101 @@ button, select, textarea, input {
 
 /* ── Monaco editor radius ── */
 .monaco-editor { border-radius: 0 !important; }
+
+/* ── Landing page: hero accent gradient overlay ── */
+.hero-gradient {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 90% 80%, rgba(34,211,238,0.06) 0%, transparent 60%);
+}
+
+/* ── Glassmorphism feature card ── */
+.glass-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.glass-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 20px 60px rgba(99,102,241,0.12), 0 0 0 1px rgba(99,102,241,0.25);
+  border-color: rgba(99,102,241,0.35);
+}
+
+/* ── Horizontal auto-scroll ticker ── */
+@keyframes slide-left {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: slide-left 28s linear infinite;
+}
+.ticker-track:hover { animation-play-state: paused; }
+
+/* ── Floating card for hero ── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(-1deg); }
+  50%       { transform: translateY(-14px) rotate(1deg); }
+}
+.float-card { animation: float 6s ease-in-out infinite; }
+.float-card-delay { animation: float 6s ease-in-out 1.5s infinite; }
+.float-card-delay2 { animation: float 6s ease-in-out 3s infinite; }
+
+/* ── Shimmer skeleton effect ── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.02) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 2.5s linear infinite;
+}
+
+/* ── Staggered fade-up for landing sections ── */
+@keyframes fade-up-stagger {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up-stagger { animation: fade-up-stagger 0.7s ease forwards; }
+.delay-100 { animation-delay: 0.1s; opacity: 0; }
+.delay-200 { animation-delay: 0.2s; opacity: 0; }
+.delay-300 { animation-delay: 0.3s; opacity: 0; }
+.delay-400 { animation-delay: 0.4s; opacity: 0; }
+.delay-500 { animation-delay: 0.5s; opacity: 0; }
+.delay-600 { animation-delay: 0.6s; opacity: 0; }
+
+/* ── Animated border glow ring ── */
+@keyframes border-rotate {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 400% 50%; }
+}
+.glow-border {
+  position: relative;
+}
+.glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, #6366f1, #22d3ee, #4ade80, #6366f1);
+  background-size: 400% 100%;
+  animation: border-rotate 4s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

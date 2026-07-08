@@ -3,13 +3,16 @@ import { X, Mail, Lock, User, LogIn, UserPlus, Chrome, Sparkles } from 'lucide-r
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient'
 import { apiUrl } from '../lib/api'
 
-export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
-  const [activeTab, setActiveTab] = useState('login')
+export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialTab = 'login' }) {
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Sync tab when opened from different CTAs
+  React.useEffect(() => { setActiveTab(initialTab) }, [initialTab])
 
   if (!isOpen) return null
 

@@ -3,11 +3,13 @@ import ProblemList from './pages/ProblemList'
 import ProblemWorkspace from './pages/ProblemWorkspace'
 import CompilerPage from './pages/CompilerPage'
 import ProfilePage from './pages/ProfilePage'
+import LandingPage from './pages/LandingPage'
 import AuthModal from './components/AuthModal'
+import OpenSourceDoc from './components/OpenSourceDoc'
 import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
 import { apiUrl } from './lib/api'
 import {
-  Zap, LayoutList, Sun, Moon, Menu, X, User, LogOut, LogIn
+  Zap, LayoutList, Sun, Moon, Menu, X, User, LogOut, LogIn, Home
 } from 'lucide-react'
 
 /* ── Theme toggle pill ───────────────────────────────────────────────────── */
@@ -92,14 +94,16 @@ function NavButton({ label, targetView, Icon, view, onClick }) {
 
 /* ── App ─────────────────────────────────────────────────────────────────── */
 export default function App() {
-  const [view, setView] = useState('list')
+  const [view, setView] = useState('home')
   const [selectedProblemId, setSelectedProblemId] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [authModalTab, setAuthModalTab] = useState('login')
   const [authSyncError, setAuthSyncError] = useState('')
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
+  const [docOpen, setDocOpen] = useState(false)
 
   /* ── Persistent theme ── */
   const [dark, setDark] = useState(() => {
@@ -190,9 +194,7 @@ export default function App() {
     setUser(null)
     setToken(null)
     setUserDropdownOpen(false)
-    if (view === 'profile') {
-      setView('list')
-    }
+    setView('home')
   }
 
   const handleViewProblem = (id) => {
@@ -202,7 +204,7 @@ export default function App() {
   }
 
   const handleBackToList = () => {
-    setView('list')
+    setView('home')
     setSelectedProblemId(null)
   }
 
@@ -210,6 +212,16 @@ export default function App() {
     setView(v)
     if (v !== 'problem') setSelectedProblemId(null)
     setMobileMenuOpen(false)
+  }
+
+  const openGetStarted = () => {
+    setAuthModalTab('register')
+    setAuthModalOpen(true)
+  }
+
+  const openLogin = () => {
+    setAuthModalTab('login')
+    setAuthModalOpen(true)
   }
 
   return (
@@ -224,12 +236,13 @@ export default function App() {
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-4">
 
           {/* Logo */}
-          <button onClick={handleBackToList} className="flex-shrink-0 cursor-pointer">
+          <button onClick={() => navigate('home')} className="flex-shrink-0 cursor-pointer">
             <LogoMark />
           </button>
 
           {/* Desktop nav */}
           <nav className="hidden sm:flex items-center gap-1">
+            <NavButton label="Home"      targetView="home"     Icon={Home}       view={view} onClick={() => navigate('home')} />
             <NavButton label="Problems"  targetView="list"     Icon={LayoutList} view={view} onClick={() => navigate('list')} />
             <NavButton label="Compiler"  targetView="compiler" Icon={Zap}        view={view} onClick={() => navigate('compiler')} />
           </nav>
@@ -276,7 +289,7 @@ export default function App() {
               </div>
             ) : (
               <button
-                onClick={() => setAuthModalOpen(true)}
+                onClick={openLogin}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white transition-all cursor-pointer shadow-sm shadow-indigo-500/10"
               >
                 <LogIn className="w-3.5 h-3.5" />
@@ -299,6 +312,7 @@ export default function App() {
         {mobileMenuOpen && (
           <div className="sm:hidden border-t border-[var(--border)] bg-[var(--bg-surface)] px-4 py-3 space-y-2">
             <div className="flex flex-col gap-1">
+              <NavButton label="Home"      targetView="home"     Icon={Home}       view={view} onClick={() => navigate('home')} />
               <NavButton label="Problems"  targetView="list"     Icon={LayoutList} view={view} onClick={() => navigate('list')} />
               <NavButton label="Compiler"  targetView="compiler" Icon={Zap}        view={view} onClick={() => navigate('compiler')} />
             </div>
@@ -322,7 +336,7 @@ export default function App() {
                 </div>
               ) : (
                 <button
-                  onClick={() => { setAuthModalOpen(true); setMobileMenuOpen(false); }}
+                  onClick={() => { openLogin(); setMobileMenuOpen(false); }}
                   className="w-full text-center py-2 text-xs font-semibold bg-[var(--accent)] text-white rounded-lg flex items-center justify-center gap-1.5"
                 >
                   <LogIn className="w-3.5 h-3.5" />
@@ -354,15 +368,35 @@ export default function App() {
           <ProblemWorkspace problemId={selectedProblemId} onBack={handleBackToList} dark={dark} />
         ) : view === 'profile' ? (
           <ProfilePage userProfileHash={user?.profile_hash} onBack={handleBackToList} dark={dark} />
-        ) : (
+        ) : view === 'list' ? (
           <ProblemList onSelectProblem={handleViewProblem} user={user} dark={dark} />
+        ) : (
+          <LandingPage
+            user={user}
+            onGetStarted={openGetStarted}
+            onLogin={openLogin}
+            onNavigate={navigate}
+            onOpenSourceClick={() => setDocOpen(true)}
+          />
         )}
       </main>
 
       {/* ── Footer ── */}
       <footer className="border-t border-[var(--border)] bg-[var(--bg-surface)] py-4">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 text-center text-xs text-[var(--text-muted)]">
-          <p>© 2026 ApexJudge</p>
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
+          <p>© 2026 ApexJudge — Sandboxed Online Judge</p>
+          <div className="flex gap-4">
+            <button 
+              onClick={() => setDocOpen(true)} 
+              className="hover:text-[var(--text-primary)] transition-colors cursor-pointer font-medium"
+            >
+              Open Source
+            </button>
+            <span>·</span>
+            <span>8 Languages</span>
+            <span>·</span>
+            <span>Sandboxed</span>
+          </div>
         </div>
       </footer>
 
@@ -370,7 +404,14 @@ export default function App() {
       <AuthModal 
         isOpen={authModalOpen} 
         onClose={() => setAuthModalOpen(false)} 
-        onAuthSuccess={handleAuthSuccess} 
+        onAuthSuccess={handleAuthSuccess}
+        initialTab={authModalTab}
+      />
+
+      {/* ── Open Source Story Drawer ── */}
+      <OpenSourceDoc 
+        isOpen={docOpen} 
+        onClose={() => setDocOpen(false)} 
       />
     </div>
   )

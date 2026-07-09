@@ -134,7 +134,7 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
       const r = 18 + Math.sqrt(item.solved) * 11
       
       // Predefined 3D radial gradient color IDs
-      const colors = ['violet', 'indigo', 'blue', 'emerald', 'amber', 'rose']
+      const colors = ['orange', 'amber', 'blue', 'emerald', 'crimson', 'rose']
       const themeColor = colors[index % colors.length]
 
       return {
@@ -179,7 +179,7 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--accent)]"></div>
         <p className="mt-4 text-sm text-[var(--text-secondary)] font-semibold">Loading stats & submissions analysis...</p>
       </div>
     )
@@ -219,7 +219,7 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
           Back
         </button>
         <div className="flex items-center gap-2">
-          <Award className="w-5 h-5 text-indigo-400" />
+          <Award className="w-5 h-5 text-[var(--accent)]" />
           <span className="text-sm font-mono text-[var(--text-muted)] uppercase tracking-wider">Candidate Analysis Profile</span>
         </div>
       </div>
@@ -231,10 +231,10 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
         <div className="lg:col-span-4 flex flex-col gap-6">
           {/* User Profile Card */}
           <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl p-6 shadow-md relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-indigo-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[var(--accent)]/10 to-transparent rounded-bl-full pointer-events-none"></div>
             
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center text-white font-display text-2xl uppercase shadow-md shadow-indigo-500/20">
+              <div className="w-16 h-16 rounded-2xl bg-[var(--accent)] flex items-center justify-center text-white font-display text-2xl uppercase shadow-md shadow-orange-500/20">
                 {profile.username.slice(0, 2)}
               </div>
               <div>
@@ -340,7 +340,7 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div>
                 <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-indigo-400" />
+                  <Calendar className="w-4 h-4 text-[var(--accent)]" />
                   Submission Activity Heatmap
                 </h3>
                 <p className="text-xs text-[var(--text-muted)] mt-1">Real-time daily code submission frequency density</p>
@@ -463,7 +463,7 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div>
                 <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-indigo-400" />
+                  <BarChart3 className="w-4 h-4 text-[var(--accent)]" />
                   Tag-Wise Topic Profile Analysis
                 </h3>
                 <p className="text-xs text-[var(--text-muted)] mt-1">
@@ -492,15 +492,15 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
                 <svg viewBox="0 0 400 360" className="w-full h-full max-w-[400px] select-none">
                   <defs>
                     {/* Define 3D gradients with offset light source */}
-                    <radialGradient id="bubble-violet" cx="35%" cy="35%" r="65%">
-                      <stop offset="0%" stopColor="#ddd6fe" />
-                      <stop offset="50%" stopColor="#8b5cf6" />
-                      <stop offset="100%" stopColor="#5b21b6" />
+                    <radialGradient id="bubble-crimson" cx="35%" cy="35%" r="65%">
+                      <stop offset="0%" stopColor="#fca5a5" />
+                      <stop offset="50%" stopColor="#dc2626" />
+                      <stop offset="100%" stopColor="#7f1d1d" />
                     </radialGradient>
-                    <radialGradient id="bubble-indigo" cx="35%" cy="35%" r="65%">
-                      <stop offset="0%" stopColor="#c7d2fe" />
-                      <stop offset="50%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#3730a3" />
+                    <radialGradient id="bubble-orange" cx="35%" cy="35%" r="65%">
+                      <stop offset="0%" stopColor="#fed7aa" />
+                      <stop offset="50%" stopColor="#ff5c00" />
+                      <stop offset="100%" stopColor="#9a3412" />
                     </radialGradient>
                     <radialGradient id="bubble-blue" cx="35%" cy="35%" r="65%">
                       <stop offset="0%" stopColor="#bfdbfe" />
@@ -607,7 +607,7 @@ export default function ProfilePage({ userProfileHash, onBack, dark }) {
                     left: `${hoveredBubble.rect.left + hoveredBubble.rect.width / 2 - 80}px`
                   }}
                 >
-                  <strong className="text-indigo-300 text-[13px]">{hoveredBubble.bubble.tag}</strong>
+                  <strong className="text-[var(--accent)] text-[13px]">{hoveredBubble.bubble.tag}</strong>
                   <div className="flex justify-between items-center gap-8 font-mono">
                     <span className="text-slate-400">Solved:</span>
                     <span className="font-bold">{hoveredBubble.bubble.solved} / {hoveredBubble.bubble.total}</span>

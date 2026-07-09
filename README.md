@@ -1,4 +1,4 @@
-# ApexJudge — Sandboxed Online Judge Platform
+# CodePulse — Sandboxed Online Judge & DSA Learning Platform
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white)](https://frontend-iota-eosin-36.vercel.app)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
@@ -7,13 +7,32 @@
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
 [![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
 
-**ApexJudge** is a full-stack competitive programming platform where users solve 34+ algorithmic problems in C++, Python, and Java. Every submission runs in a disposable Docker sandbox with strict Linux cgroup resource limits, graded asynchronously through a Redis queue, and results are returned in real-time.
+**CodePulse** is a full-stack competitive programming and DSA learning platform. Solve 34+ algorithmic problems in C++, Python, and Java — every submission runs in a disposable Docker sandbox with strict Linux cgroup resource limits, graded asynchronously through a Redis queue. Plus an interactive SVG-based DSA Mind Map, interview cheatsheets, and step-by-step algorithm visualisers — all free, no login required.
 
 🌐 **Live:** https://frontend-iota-eosin-36.vercel.app
 
 ---
 
 ## ✨ Features
+
+### 🗺️ Interactive DSA Mind Map
+- **16 category nodes** branching with animated bezier curves (Sliding Window, Two Pointers, DP, Graphs, Trees, Heap, Trie, Bit Manipulation, and more)
+- **3-level SVG hierarchy**: Categories → Sub-categories → Leaf pattern techniques
+- Animated flowing dash strokes on all branch links (live energy effect)
+- Floating **algorithm details panel** on category click: description, key insight, must-know problems
+- Click any leaf node to open the **Pattern Detail Visualiser**
+
+### 📚 Pattern Detail Visualiser
+- Step-by-step interactive animations for core patterns (Two Sum hash map, Binary Search boundaries, Three Sum two-pointer, Best Stock sliding, Reverse Linked List)
+- **Python & C++ code snippets** with tabbed syntax view
+- **Complexity Analysis** tab with time / space breakdown and key interview notes
+- Play / Pause / Step controls with auto-advance mode
+
+### 📝 DSA Interview Cheatsheet
+- Complete **Pattern Recognition Tips** — 12 decision heuristics to identify the right algorithm instantly
+- **12 category tables** with Pattern, When to Use, Key Idea, and Time columns (scraped from dsamindmap.com)
+- **Data Structure Operations** comparison table (Array → Trie)
+- **Sorting Algorithms Comparison** (Quick, Merge, Heap, Bubble, Insertion, Counting — best/avg/worst/space/stable)
 
 ### 🧠 Problem Solving
 - **34+ curated problems** across Easy, Medium, and Hard difficulty
@@ -58,11 +77,18 @@ Every submission runs inside a **disposable Docker container** with:
 - **Google OAuth** via Supabase Auth (one-click sign-in)
 - **Email/password** login and registration
 - JWT-based session with support for both local JWTs and Supabase JWTs
+- DSA Map and Cheatsheet are **fully public** — no login required
 
 ### 🖥️ Standalone Compiler
 - A full **code playground** page (no problem required)
 - Run any C++, Python, or Java code against custom stdin
 - Useful for quick experiments without creating a submission
+
+### 🎨 Design System
+- **Dual dark/light theme** with CSS variable tokens
+- Dark mode palette: `#000000` base · `#FCA311` gold-orange accent · `#FFFFFF` text
+- Animated glassmorphism UI, micro-interactions, and smooth transition animations
+- Distinct typography per DSA category node using Google Fonts (Outfit, Playfair Display, Fira Code)
 
 ---
 
@@ -198,77 +224,102 @@ erDiagram
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 Local Development
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 18, Vite, Tailwind CSS, Monaco Editor |
-| Backend | Python 3.11, FastAPI, SQLAlchemy, Alembic |
-| Database | Supabase Postgres (hosted) |
-| Auth | Supabase Google OAuth + JWT |
-| Queue | Redis (async submission grading) |
-| Sandboxing | Docker Engine via `docker-py` |
-| Tunnel | Cloudflare Tunnel (`cloudflared`) |
-| Deployment | Vercel (frontend) |
+### Prerequisites
+- Docker Desktop running
+- Python 3.11+, Node.js 20+
+- Supabase project (for auth features, optional)
+
+### Quick Start
+
+```bash
+# Clone
+git clone https://github.com/your-username/online-judge.git
+cd online-judge
+
+# Backend
+cd backend
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # fill in DB + Supabase credentials
+alembic upgrade head
+uvicorn app.main:app --reload --port 8000
+
+# Frontend (new terminal)
+cd frontend
+npm install
+cp .env.example .env   # set VITE_API_URL=http://localhost:8000
+npm run dev
+```
+
+Visit `http://localhost:5173` — the DSA Map and Cheatsheet work immediately with no backend required.
+
+### Environment Variables
+
+**Backend `.env`**
+```
+DATABASE_URL=postgresql+asyncpg://...
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_JWT_SECRET=...
+SECRET_KEY=...
+```
+
+**Frontend `.env`**
+```
+VITE_API_URL=http://localhost:8000
+VITE_SUPABASE_URL=https://xxx.supabase.co
+VITE_SUPABASE_ANON_KEY=...
+```
 
 ---
 
-## 📡 API Reference
-
-Base URL: `https://[your-tunnel-url].trycloudflare.com`
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/v1/judge/problems` | — | List all problems |
-| `GET` | `/api/v1/judge/problems/{slug}` | — | Problem detail + sample cases + stubs |
-| `POST` | `/api/v1/judge/problems/{slug}/run` | — | Run code against custom input |
-| `POST` | `/api/v1/judge/problems/{slug}/submit` | Optional | Submit for full grading |
-| `GET` | `/api/v1/judge/submissions/{id}` | — | Poll submission verdict |
-| `POST` | `/api/v1/compiler/run` | — | Standalone compiler |
-| `POST` | `/api/v1/auth/register` | — | Email/password registration |
-| `POST` | `/api/v1/auth/login` | — | Email/password login |
-| `POST` | `/api/v1/auth/supabase-login` | — | Exchange Supabase OAuth token |
-| `GET` | `/api/v1/users/profile/{hash}` | — | User profile + stats |
-| `GET` | `/api/v1/users/profile/{hash}/heatmap` | — | Activity heatmap + streaks |
-| `GET` | `/api/v1/users/profile/{hash}/tags` | — | Tag distribution |
-| `GET` | `/api/v1/users/profile/{hash}/solved` | — | Solved problems list |
-| `GET` | `/api/v1/users/draft/{slug}/{lang}` | ✅ | Load saved code draft |
-| `PUT` | `/api/v1/users/draft` | ✅ | Save code draft |
-
----
-
-## 🗂️ Project Structure
+## 📁 Project Structure
 
 ```
 online-judge/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py            # FastAPI app entry point + router registration
-│   │   ├── core/              # Config, security (JWT), database session
-│   │   ├── judge/             # Problem listing, submission, verdict, drivers
-│   │   ├── compiler/          # Standalone compiler endpoint
-│   │   ├── auth/              # Register, login, Supabase OAuth sync
-│   │   └── user/              # Profile, heatmap, stats, code drafts
-│   ├── problems/              # Problem YAML files (34+ problems)
-│   ├── scripts/               # DB seed scripts
+│   │   ├── judge/        ← submission, execution, grading
+│   │   ├── user/         ← auth, profiles
+│   │   ├── db/           ← models, migrations
+│   │   └── main.py
 │   └── requirements.txt
 ├── frontend/
 │   └── src/
-│       ├── pages/             # ProblemList, ProblemWorkspace, CompilerPage, ProfilePage
-│       ├── components/        # AuthModal, etc.
-│       └── lib/               # apiUrl(), supabaseClient
-├── alembic/                   # Database migrations
-├── docs/
-│   ├── SETUP.md               # Local setup & run guide
-│   └── DEPLOYMENT.md          # Deployment reference
-└── docker-compose.yml         # Local dev (Postgres + Redis) — optional
+│       ├── components/
+│       │   ├── DsaMindMap.jsx       ← 3-level interactive SVG mind map
+│       │   ├── DsaCheatsheet.jsx    ← full interview cheatsheet
+│       │   └── ...
+│       ├── pages/
+│       │   ├── PatternDetail.jsx    ← algorithm visualiser + code tabs
+│       │   ├── LandingPage.jsx
+│       │   ├── AuthPage.jsx
+│       │   └── ...
+│       └── index.css                ← CSS variable dual-theme system
+├── .agents/
+│   └── skills/
+│       └── dsa-map/SKILL.md         ← custom agent skill for DSA map patterns
+└── docs/
+    └── SETUP.md
 ```
 
 ---
 
-## 📖 Documentation
+## 🛠️ Tech Stack
 
-| Doc | Description |
-|-----|-------------|
-| [docs/SETUP.md](docs/SETUP.md) | Step-by-step local setup and daily workflow |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment architecture reference |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, Vite, Tailwind CSS |
+| Backend | FastAPI (async), SQLAlchemy 2.0 |
+| Database | Supabase Postgres |
+| Auth | Supabase Auth (Google OAuth + JWT) |
+| Queue | Redis + custom worker |
+| Sandbox | Docker (per-submission containers) |
+| Deploy | Vercel (FE) + Cloudflare Tunnel (BE) |
+
+---
+
+## 📜 License
+
+MIT — feel free to fork, study, and build on it.

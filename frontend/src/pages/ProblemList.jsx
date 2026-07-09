@@ -21,13 +21,13 @@ function TagPill({ tag, count, active, onClick }) {
         inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
         transition-all duration-200 cursor-pointer whitespace-nowrap flex-shrink-0
         ${active
-          ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40'
+          ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/40'
           : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'}
       `}
     >
       {tag}
       {count != null && (
-        <span className={`text-[10px] font-mono ${active ? 'text-indigo-400/70' : 'text-[var(--text-muted)]'}`}>
+        <span className={`text-[10px] font-mono ${active ? 'text-[var(--accent)]/70' : 'text-[var(--text-muted)]'}`}>
           {count}
         </span>
       )}
@@ -70,7 +70,7 @@ function ProblemRow({ problem, index, onSelect }) {
 
       {/* Title */}
       <span className="flex-1 text-sm font-medium text-[var(--text-primary)] truncate
-        group-hover:text-indigo-400 transition-colors">
+        group-hover:text-[var(--accent)] transition-colors">
         {problem.title}
       </span>
 
@@ -183,8 +183,8 @@ export default function ProblemList({ onSelectProblem, user }) {
           <p className="text-sm text-[var(--text-secondary)] mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-5 py-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20
-              border border-indigo-500/30 text-indigo-400 text-xs font-semibold
+            className="px-5 py-2 rounded-lg bg-[var(--accent-subtle)] hover:bg-[var(--accent)]/20
+              border border-[var(--accent)]/30 text-[var(--accent)] text-xs font-semibold
               transition-colors cursor-pointer"
           >
             Retry Connection
@@ -213,13 +213,13 @@ export default function ProblemList({ onSelectProblem, user }) {
             className={`
               px-5 py-3 text-xs font-semibold border-b-2 -mb-[2px] transition-all cursor-pointer whitespace-nowrap
               ${activeProgram === prog.id
-                ? 'border-indigo-500 text-indigo-400 font-bold'
+                ? 'border-[var(--accent)] text-[var(--accent)] font-bold'
                 : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}
             `}
           >
             {prog.label}
             <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-medium
-              ${activeProgram === prog.id ? 'bg-indigo-500/15 text-indigo-400' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>
+              ${activeProgram === prog.id ? 'bg-[var(--accent-subtle)] text-[var(--accent)]' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>
               {prog.count}
             </span>
           </button>
@@ -257,8 +257,8 @@ export default function ProblemList({ onSelectProblem, user }) {
           <button
             onClick={() => setActiveTag(null)}
             className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium
-              bg-indigo-500/15 text-indigo-400 border border-indigo-500/30
-              hover:bg-indigo-500/25 transition-colors cursor-pointer"
+              bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/30
+              hover:bg-[var(--accent)]/20 transition-colors cursor-pointer"
           >
             {activeTag}
             <X className="w-3 h-3" />
@@ -279,7 +279,7 @@ export default function ProblemList({ onSelectProblem, user }) {
             className="w-full pl-9 pr-3 py-2 text-xs rounded-lg
               bg-[var(--bg-elevated)] border border-[var(--border)]
               text-[var(--text-primary)] placeholder:text-[var(--text-muted)]
-              focus:outline-none focus:border-indigo-500/40
+              focus:outline-none focus:border-[var(--accent)]/40
               transition-colors"
           />
         </div>

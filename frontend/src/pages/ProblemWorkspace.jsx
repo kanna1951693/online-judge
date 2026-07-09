@@ -32,7 +32,7 @@ const VERDICT_CLS = {
   amber:   'bg-amber-500/10   text-amber-400   border-amber-500/30',
   purple:  'bg-purple-500/10  text-purple-400  border-purple-500/30',
   slate:   'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-[var(--border)]',
-  blue:    'bg-indigo-500/10  text-indigo-400  border-indigo-500/30',
+  blue:    'bg-[var(--accent-subtle)] text-[var(--accent)] border-[var(--accent)]/30',
 }
 
 function VerdictBadge({ verdict }) {
@@ -73,8 +73,8 @@ function Stopwatch() {
     <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg
       bg-[var(--bg-elevated)] border border-[var(--border)]
       text-[var(--text-muted)] font-mono text-[10px] select-none
-      hover:border-indigo-500/30 transition-colors">
-      <Clock className="w-3 h-3 text-indigo-400" />
+      hover:border-[var(--accent)]/30 transition-colors">
+      <Clock className="w-3 h-3 text-[var(--accent)]" />
       <span className="font-bold text-[var(--text-primary)] tracking-wider tabular-nums">{fmt(time)}</span>
       <div className="h-2.5 w-px bg-[var(--border)]" />
       <button onClick={toggle} title={isRunning ? 'Pause' : 'Start'}
@@ -90,7 +90,7 @@ function Stopwatch() {
 }
 
 /* ── Collapsible section ─────────────────────────────────────────────────── */
-function CollapsibleSection({ title, icon: Icon, iconCls = 'text-indigo-400', children, defaultOpen = false }) {
+function CollapsibleSection({ title, icon: Icon, iconCls = 'text-[var(--accent)]', children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div className="rounded-xl border border-[var(--border)] overflow-hidden">
@@ -289,7 +289,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12">
-        <div className="w-10 h-10 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin mb-4" />
+        <div className="w-10 h-10 rounded-full border-2 border-[var(--accent)]/20 border-t-[var(--accent)] animate-spin mb-4" />
         <p className="text-[var(--text-muted)] font-mono text-sm">Loading problem…</p>
       </div>
     )
@@ -386,7 +386,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
               <ul className="space-y-1.5">
                 {problem.constraints.map((c, i) => (
                   <li key={i} className="flex items-center gap-2 text-xs font-mono text-[var(--text-secondary)]">
-                    <span className="text-indigo-400">•</span>{c}
+                    <span className="text-[var(--accent)]">•</span>{c}
                   </li>
                 ))}
               </ul>
@@ -426,7 +426,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
 
           {/* Similar Questions */}
           {problem?.similar_questions?.length > 0 && (
-            <CollapsibleSection title="Similar Questions" icon={BookOpen} iconCls="text-indigo-400">
+            <CollapsibleSection title="Similar Questions" icon={BookOpen} iconCls="text-[var(--accent)]">
               <div className="divide-y divide-[var(--border)]">
                 {problem.similar_questions.map((q, idx) => {
                   const dc = {
@@ -466,7 +466,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
               disabled={submitting || running}
               className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-lg px-2.5 py-1
                 text-xs text-[var(--text-primary)] font-mono
-                focus:outline-none focus:border-indigo-500/40
+                focus:outline-none focus:border-[var(--accent)]/40
                 disabled:opacity-50 cursor-pointer"
             >
               <option value="python">Python 3</option>
@@ -492,7 +492,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
               title="Run with custom input"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
                 bg-[var(--bg-elevated)] hover:bg-[var(--bg-elevated)] border border-[var(--border)]
-                hover:border-indigo-500/30 hover:text-indigo-400
+                hover:border-[var(--accent)]/30 hover:text-[var(--accent)]
                 text-[var(--text-primary)] text-xs font-semibold
                 transition-all duration-200 disabled:opacity-50 cursor-pointer"
             >
@@ -551,7 +551,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
               onClick={() => setActivePanel('run')}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold transition-colors border-b-2 cursor-pointer
                 ${activePanel === 'run'
-                  ? 'text-[var(--text-primary)] border-indigo-500'
+                  ? 'text-[var(--text-primary)] border-[var(--accent)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] border-transparent'}`}
             >
               <Terminal className="w-3.5 h-3.5" />
@@ -588,7 +588,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
                     placeholder="Type your input here…"
                     className="flex-1 bg-[var(--bg-base)] border border-[var(--border)] rounded-lg p-2.5
                       text-xs font-mono text-[var(--text-primary)] resize-none
-                      focus:outline-none focus:border-indigo-500/40
+                      focus:outline-none focus:border-[var(--accent)]/40
                       placeholder:text-[var(--text-muted)]"
                     spellCheck={false}
                   />
@@ -654,7 +654,7 @@ export default function ProblemWorkspace({ problemId, onBack, dark }) {
                     {/* Queue / Running indicator */}
                     {(submission.status === 'QUEUED' || submission.status === 'RUNNING') && (
                       <div className="flex items-center gap-3 p-3 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border)] animate-pulse">
-                        <Loader2 className="w-5 h-5 text-indigo-400 animate-spin flex-shrink-0" />
+                        <Loader2 className="w-5 h-5 text-[var(--accent)] animate-spin flex-shrink-0" />
                         <div>
                           <p className="text-xs font-bold font-mono text-[var(--text-primary)]">
                             {submission.status === 'QUEUED' ? 'Queued — waiting for worker…' : 'Running in isolated sandbox…'}

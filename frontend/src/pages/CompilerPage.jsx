@@ -111,8 +111,8 @@ function Stopwatch() {
     <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg
       bg-[var(--bg-elevated)] border border-[var(--border)]
       text-[var(--text-muted)] font-mono text-[10px] select-none
-      hover:border-indigo-500/30 transition-colors">
-      <Clock className="w-3 h-3 text-indigo-400" />
+      hover:border-[var(--accent)]/30 transition-colors">
+      <Clock className="w-3 h-3 text-[var(--accent)]" />
       <span className="font-bold text-[var(--text-primary)] tracking-wider tabular-nums">{fmt(time)}</span>
       <div className="h-2.5 w-px bg-[var(--border)]" />
       <button onClick={toggle} title={isRunning ? 'Pause' : 'Start'}
@@ -199,7 +199,7 @@ export default function CompilerPage({ dark }) {
                 onClick={() => handleLanguageChange(key)}
                 className={`px-3 py-1.5 text-xs font-mono font-medium transition-colors cursor-pointer
                   ${language === key
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-[var(--accent)] text-white'
                     : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
               >
@@ -301,7 +301,7 @@ export default function CompilerPage({ dark }) {
                 spellCheck={false}
                 className="w-full h-28 px-4 py-3 bg-[var(--bg-base)] border-t border-[var(--border)]
                   text-[var(--text-primary)] font-mono text-xs resize-none
-                  focus:outline-none focus:border-indigo-500/40
+                  focus:outline-none focus:border-[var(--accent)]/40
                   placeholder:text-[var(--text-muted)]"
               />
             )}
@@ -313,10 +313,10 @@ export default function CompilerPage({ dark }) {
               onClick={handleRun}
               disabled={running}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
-                bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
+                bg-[var(--accent)] hover:bg-[var(--accent-hover)] active:opacity-90
                 disabled:opacity-50 disabled:cursor-not-allowed
                 text-white text-sm font-bold transition-all duration-200
-                shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30
+                shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30
                 hover:glow-pulse cursor-pointer"
             >
               {running
@@ -330,7 +330,7 @@ export default function CompilerPage({ dark }) {
 
             {running && (
               <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <div className="w-10 h-10 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin" />
+                <div className="w-10 h-10 rounded-full border-2 border-[var(--accent)]/20 border-t-[var(--accent)] animate-spin" />
                 <p className="text-xs text-[var(--text-muted)] font-mono animate-pulse">
                   Running in sandbox…
                 </p>
@@ -371,14 +371,14 @@ export default function CompilerPage({ dark }) {
                 {/* Language cards */}
                 <div className="grid grid-cols-3 gap-2 w-full max-w-xs mt-2">
                   {[
-                    { icon: '🐍', name: 'Python 3.10', cmd: 'python3'  },
-                    { icon: '⚡', name: 'C++ 17',       cmd: 'g++ -O2'  },
-                    { icon: '☕', name: 'Java 17',       cmd: 'javac'    },
+                    { icon: 'PY', name: 'Python 3.10', cmd: 'python3'  },
+                    { icon: 'C++', name: 'C++ 17',      cmd: 'g++ -O2'  },
+                    { icon: 'JV', name: 'Java 17',      cmd: 'javac'    },
                   ].map(l => (
                     <div key={l.name}
                       className="rounded-xl bg-[var(--bg-elevated)] border border-[var(--border)] p-2.5 text-center
-                        hover:border-indigo-500/30 transition-colors">
-                      <div className="text-xl mb-1">{l.icon}</div>
+                        hover:border-[var(--accent)]/30 transition-colors">
+                      <div className="text-[9px] font-black text-[var(--accent)] mb-1 font-mono tracking-widest">{l.icon}</div>
                       <div className="text-[10px] font-bold text-[var(--text-primary)]">{l.name}</div>
                       <div className="text-[9px] text-[var(--text-muted)] font-mono">{l.cmd}</div>
                     </div>

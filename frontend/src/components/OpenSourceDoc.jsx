@@ -73,14 +73,14 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
         {/* Header */}
         <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg-surface)] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-indigo-500/15 text-indigo-500">
+            <div className="p-2 rounded-xl bg-[var(--accent-subtle)] text-[var(--accent)]">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-[var(--text-primary)] font-display tracking-wide">
-                Magical Code Playground: How It Works! 🌟
+                Sandboxed Code Engine: How It Works
               </h2>
-              <p className="text-xs text-[var(--text-muted)]">Explaining the architecture like you are 5 years old</p>
+              <p className="text-xs text-[var(--text-muted)]">Architecture explained simply — from editor to verdict</p>
             </div>
           </div>
 
@@ -90,7 +90,7 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
               onClick={() => setShowIndex(!showIndex)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 showIndex 
-                  ? 'bg-indigo-500 text-white' 
+                  ? 'bg-[var(--accent)] text-white' 
                   : 'bg-[var(--bg-base)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--border-subtle)]'
               }`}
             >
@@ -127,7 +127,7 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
                   onClick={() => scrollToSection(section.id)}
                   className={`w-full text-left text-xs font-semibold px-3 py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-between ${
                     activeSection === section.id
-                      ? 'bg-indigo-500/10 text-indigo-500 border-l-2 border-indigo-500 pl-2.5'
+                      ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border-l-2 border-[var(--accent)] pl-2.5'
                       : 'text-[var(--text-secondary)] hover:bg-[var(--bg-base)]'
                   }`}
                 >
@@ -155,7 +155,7 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
                 If it is, you get a shiny green checkmark! If not, the robot helps you try again!
               </p>
               <div className="p-4 rounded-2xl bg-[var(--accent-subtle)] border border-[var(--border)] flex gap-3">
-                <Info className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" />
+                <Info className="w-5 h-5 text-[var(--accent)] flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                   <strong>Kid-friendly definition of Online Judge:</strong> A website where you submit code, it compiles and runs your code automatically against hidden test answers, and returns a verdict like "Accepted" or "Wrong Answer" in seconds.
                 </p>
@@ -174,7 +174,7 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border)] space-y-2">
                   <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-indigo-500" /> React (The Building Blocks)
+                    <Layers className="w-4 h-4  text-[var(--accent)]" /> React (The Building Blocks)
                   </h4>
                   <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                     Like LEGO blocks! We use them to build the pages, buttons, list boxes, and forms so everything snaps together nicely and works instantly without reloading the page.
@@ -231,7 +231,7 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
 
                 <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border)] space-y-2">
                   <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                    <BookOpen className="w-4 h-4 text-violet-500" /> Redis (The Line Leader)
+                    <BookOpen className="w-4 h-4 text-[var(--accent)]" /> Redis (The Line Leader)
                   </h4>
                   <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                     Like a teacher keeping children in a straight line. If many kids submit code at the same time, Redis makes sure they wait in line nicely so the cooks don't get confused.
@@ -249,7 +249,7 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
 
                 <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border)] space-y-2">
                   <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                    <HardDrive className="w-4 h-4 text-indigo-500" /> Celery Workers (The Chefs)
+                    <HardDrive className="w-4 h-4  text-[var(--accent)]" /> Celery Workers (The Chefs)
                   </h4>
                   <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                     The background cooks who take your code from the queue line, execute it inside the safe sandbox, check the result, and save it.
@@ -268,7 +268,7 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
               </p>
               <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border)] space-y-3">
                 <h4 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                  <Terminal className="w-4 h-4 text-indigo-400" /> Docker containers (Safe Bubbles)
+                  <Terminal className="w-4 h-4  text-[var(--accent)]" /> Docker containers (Safe Bubbles)
                 </h4>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                   We use **Docker** to create separate virtual tiny bubbles. When you run your code, it runs inside this bubble. 
@@ -287,33 +287,33 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
                 When you click the green **Run** button, a fast process takes place behind the scenes:
               </p>
 
-              <div className="relative border-l-2 border-indigo-500/20 pl-6 ml-4 space-y-6 text-xs text-[var(--text-secondary)]">
+              <div className="relative border-l-2 border-[var(--accent)]/20 pl-6 ml-4 space-y-6 text-xs text-[var(--text-secondary)]">
                 <div className="relative">
-                  <span className="absolute -left-9 top-0.5 w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs">1</span>
+                  <span className="absolute -left-9 top-0.5 w-6 h-6 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-xs">1</span>
                   <h4 className="font-bold text-[var(--text-primary)] text-sm">Write & Submit</h4>
                   <p className="mt-1 leading-relaxed">You write code on the Front Yard board (React + Monaco) and click Submit.</p>
                 </div>
 
                 <div className="relative">
-                  <span className="absolute -left-9 top-0.5 w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs">2</span>
+                  <span className="absolute -left-9 top-0.5 w-6 h-6 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-xs">2</span>
                   <h4 className="font-bold text-[var(--text-primary)] text-sm">Waiter Delivers</h4>
                   <p className="mt-1 leading-relaxed">The waiter (FastAPI) takes your code and drops it in the queue line (Redis).</p>
                 </div>
 
                 <div className="relative">
-                  <span className="absolute -left-9 top-0.5 w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs">3</span>
+                  <span className="absolute -left-9 top-0.5 w-6 h-6 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-xs">3</span>
                   <h4 className="font-bold text-[var(--text-primary)] text-sm">Bubble is Blown</h4>
                   <p className="mt-1 leading-relaxed">The chef (Celery Worker) builds a locked tiny box (Docker sandbox) and places your code inside.</p>
                 </div>
 
                 <div className="relative">
-                  <span className="absolute -left-9 top-0.5 w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs">4</span>
+                  <span className="absolute -left-9 top-0.5 w-6 h-6 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-xs">4</span>
                   <h4 className="font-bold text-[var(--text-primary)] text-sm">Checking Answers</h4>
                   <p className="mt-1 leading-relaxed">The cook runs your code with secret input test numbers. It matches the outputs. If it is 100% correct, verdict is "Accepted"!</p>
                 </div>
 
                 <div className="relative">
-                  <span className="absolute -left-9 top-0.5 w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-xs">5</span>
+                  <span className="absolute -left-9 top-0.5 w-6 h-6 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-xs">5</span>
                   <h4 className="font-bold text-[var(--text-primary)] text-sm">Deliver Gold Star</h4>
                   <p className="mt-1 leading-relaxed">The result goes back to the waiter, gets stored in the lockbox (Supabase), and displays a nice green banner on your screen!</p>
                 </div>
@@ -339,10 +339,10 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
                     <span className="text-2xl mb-1">🎠</span>
                     <span className="font-bold text-xs text-[var(--text-primary)]">Frontend</span>
                     <span className="text-[10px] text-[var(--text-muted)]">React + Monaco</span>
-                    <span className="mt-2 text-[9px] bg-indigo-500/10 text-indigo-500 font-semibold px-2 py-0.5 rounded-full">You write code</span>
+                    <span className="mt-2 text-[9px] bg-[var(--accent-subtle)] text-[var(--accent)] font-semibold px-2 py-0.5 rounded-full">You write code</span>
                   </div>
 
-                  <ArrowRight className="hidden md:block w-5 h-5 text-indigo-500 animate-pulse" />
+                  <ArrowRight className="hidden md:block w-5 h-5 text-[var(--accent)] animate-pulse" />
 
                   {/* Step 2 */}
                   <div className="flex flex-col items-center text-center p-3 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] w-40">
@@ -352,7 +352,7 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
                     <span className="mt-2 text-[9px] bg-amber-500/10 text-amber-500 font-semibold px-2 py-0.5 rounded-full">Carries package</span>
                   </div>
 
-                  <ArrowRight className="hidden md:block w-5 h-5 text-indigo-500 animate-pulse" />
+                  <ArrowRight className="hidden md:block w-5 h-5 text-[var(--accent)] animate-pulse" />
 
                   {/* Step 3 */}
                   <div className="flex flex-col items-center text-center p-3 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] w-40">
@@ -362,7 +362,7 @@ export default function OpenSourceDoc({ isOpen, onClose }) {
                     <span className="mt-2 text-[9px] bg-emerald-500/10 text-emerald-500 font-semibold px-2 py-0.5 rounded-full">Runs securely</span>
                   </div>
 
-                  <ArrowRight className="hidden md:block w-5 h-5 text-indigo-500 animate-pulse" />
+                  <ArrowRight className="hidden md:block w-5 h-5 text-[var(--accent)] animate-pulse" />
 
                   {/* Step 4 */}
                   <div className="flex flex-col items-center text-center p-3 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border)] w-40">

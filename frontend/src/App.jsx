@@ -4,12 +4,16 @@ import ProblemWorkspace from './pages/ProblemWorkspace'
 import CompilerPage from './pages/CompilerPage'
 import ProfilePage from './pages/ProfilePage'
 import LandingPage from './pages/LandingPage'
-import AuthModal from './components/AuthModal'
+import AuthPage from './pages/AuthPage'
 import OpenSourceDoc from './components/OpenSourceDoc'
+import LockedProblemsView from './components/LockedProblemsView'
+import DsaMindMap from './components/DsaMindMap'
+import DsaCheatsheet from './components/DsaCheatsheet'
+import PatternDetail from './pages/PatternDetail'
 import { isSupabaseConfigured, supabase } from './lib/supabaseClient'
 import { apiUrl } from './lib/api'
 import {
-  Zap, LayoutList, Sun, Moon, Menu, X, User, LogOut, LogIn, Home
+  Zap, LayoutList, Sun, Moon, Menu, X, User, LogOut, LogIn, Home, Network, FileText
 } from 'lucide-react'
 
 /* ── Theme toggle pill ───────────────────────────────────────────────────── */
@@ -22,27 +26,25 @@ function ThemeToggle({ dark, onToggle }) {
       className={`
         relative inline-flex items-center h-7 w-[52px] rounded-full border
         transition-all duration-300 ease-spring cursor-pointer focus-visible:ring-2
-        focus-visible:ring-indigo-500 focus-visible:ring-offset-2
+        focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2
         ${dark
-          ? 'bg-indigo-950 border-indigo-800/60'
+          ? 'bg-slate-900 border-slate-700'
           : 'bg-amber-50 border-amber-200'}
       `}
     >
-      {/* track icons */}
       <Sun  className={`absolute left-1.5 w-3.5 h-3.5 text-amber-400 transition-opacity duration-200 ${dark ? 'opacity-0' : 'opacity-100'}`} />
-      <Moon className={`absolute right-1.5 w-3.5 h-3.5 text-indigo-400 transition-opacity duration-200 ${dark ? 'opacity-100' : 'opacity-0'}`} />
-      {/* thumb */}
+      <Moon className={`absolute right-1.5 w-3.5 h-3.5 text-orange-400 transition-opacity duration-200 ${dark ? 'opacity-100' : 'opacity-0'}`} />
       <span
         className={`
           absolute top-0.5 h-6 w-6 rounded-full shadow-md flex items-center justify-center
           transition-transform duration-300 ease-spring
           ${dark
-            ? 'translate-x-[26px] bg-indigo-600 shadow-indigo-500/40'
+            ? 'translate-x-[26px] bg-[#FF5C00] shadow-orange-500/40'
             : 'translate-x-0.5 bg-white shadow-amber-200/60'}
         `}
       >
         {dark
-          ? <Moon className="w-3 h-3 text-indigo-100" />
+          ? <Moon className="w-3 h-3 text-white" />
           : <Sun  className="w-3 h-3 text-amber-500" />
         }
       </span>
@@ -50,18 +52,17 @@ function ThemeToggle({ dark, onToggle }) {
   )
 }
 
-/* ── Logo mark ──────────────────────────────────────────────────────────── */
-function LogoMark() {
+function LogoMark({ dark }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-glow-sm">
-        <svg viewBox="0 0 20 20" fill="none" className="w-4.5 h-4.5 w-5 h-5">
-          <path d="M6 6l-4 4 4 4M14 6l4 4-4 4M11 4l-2 12" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-[var(--accent)]/30 bg-[var(--accent-subtle)] shadow-sm">
+        <span className="font-mono font-black text-sm text-[var(--accent)] tracking-wider">
+          &gt;|&lt;
+        </span>
       </div>
       <div>
-        <p className="text-base font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400 leading-none">
-          ApexJudge
+        <p className="text-base font-display tracking-tight text-[var(--accent)] leading-none">
+          CodePulse
         </p>
         <p className="text-[9px] font-mono text-[var(--text-muted)] leading-none mt-0.5 tracking-widest uppercase">
           Sandboxed Engine
@@ -71,7 +72,7 @@ function LogoMark() {
   )
 }
 
-/* ── NavButton ──────────────────────────────────────────────────────────── */
+/* ── NavButton ────────────────────────────────────────────────────────────────── */
 function NavButton({ label, targetView, Icon, view, onClick }) {
   const active = view === targetView || (targetView === 'list' && view === 'problem')
   return (
@@ -81,7 +82,7 @@ function NavButton({ label, targetView, Icon, view, onClick }) {
         inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg
         transition-all duration-200 cursor-pointer
         ${active
-          ? 'bg-indigo-500/15 text-indigo-400 dark:text-indigo-300 border border-indigo-500/30'
+          ? 'bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent)]/30'
           : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]'
         }
       `}
@@ -96,18 +97,22 @@ function NavButton({ label, targetView, Icon, view, onClick }) {
 export default function App() {
   const [view, setView] = useState('home')
   const [selectedProblemId, setSelectedProblemId] = useState(null)
+  const [selectedPatternId, setSelectedPatternId] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
-  const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [authModalTab, setAuthModalTab] = useState('login')
   const [authSyncError, setAuthSyncError] = useState('')
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
   const [docOpen, setDocOpen] = useState(false)
 
+  const handleSelectPattern = (patternId) => {
+    setSelectedPatternId(patternId)
+    setView('pattern-detail')
+  }
+
   /* ── Persistent theme ── */
   const [dark, setDark] = useState(() => {
-    const stored = localStorage.getItem('apex-theme')
+    const stored = localStorage.getItem('codepulse-theme')
     if (stored) return stored === 'dark'
     return window.matchMedia('(prefers-color-scheme: dark)').matches
   })
@@ -147,7 +152,6 @@ export default function App() {
           localStorage.setItem('token', data.access_token)
           setUser(data.user)
           setToken(data.access_token)
-          setAuthModalOpen(false)
 
           if (window.location.pathname === '/auth/callback' || window.location.hash || window.location.search) {
             window.history.replaceState(null, '', window.location.origin)
@@ -176,10 +180,10 @@ export default function App() {
     const root = document.documentElement
     if (dark) {
       root.classList.add('dark')
-      localStorage.setItem('apex-theme', 'dark')
+      localStorage.setItem('codepulse-theme', 'dark')
     } else {
       root.classList.remove('dark')
-      localStorage.setItem('apex-theme', 'light')
+      localStorage.setItem('codepulse-theme', 'light')
     }
   }, [dark])
 
@@ -215,13 +219,11 @@ export default function App() {
   }
 
   const openGetStarted = () => {
-    setAuthModalTab('register')
-    setAuthModalOpen(true)
+    navigate('register')
   }
 
   const openLogin = () => {
-    setAuthModalTab('login')
-    setAuthModalOpen(true)
+    navigate('login')
   }
 
   return (
@@ -237,14 +239,16 @@ export default function App() {
 
           {/* Logo */}
           <button onClick={() => navigate('home')} className="flex-shrink-0 cursor-pointer">
-            <LogoMark />
+            <LogoMark dark={dark} />
           </button>
 
           {/* Desktop nav */}
           <nav className="hidden sm:flex items-center gap-1">
-            <NavButton label="Home"      targetView="home"     Icon={Home}       view={view} onClick={() => navigate('home')} />
-            <NavButton label="Problems"  targetView="list"     Icon={LayoutList} view={view} onClick={() => navigate('list')} />
-            <NavButton label="Compiler"  targetView="compiler" Icon={Zap}        view={view} onClick={() => navigate('compiler')} />
+            <NavButton label="Home"       targetView="home"       Icon={Home}       view={view} onClick={() => navigate('home')} />
+            <NavButton label="DSA Map"    targetView="patterns"   Icon={Network}    view={view} onClick={() => navigate('patterns')} />
+            <NavButton label="Cheatsheet" targetView="cheatsheet" Icon={FileText}   view={view} onClick={() => navigate('cheatsheet')} />
+            <NavButton label="Problems"   targetView="list"       Icon={LayoutList} view={view} onClick={() => navigate('list')} />
+            <NavButton label="Compiler"   targetView="compiler"   Icon={Zap}        view={view} onClick={() => navigate('compiler')} />
           </nav>
 
           {/* Right actions */}
@@ -259,7 +263,7 @@ export default function App() {
                   onClick={() => setUserDropdownOpen(o => !o)}
                   className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] transition-all cursor-pointer text-[var(--text-primary)]"
                 >
-                  <div className="w-5 h-5 rounded-md bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-[10px] uppercase">
+                  <div className="w-5 h-5 rounded-md bg-[var(--accent)] flex items-center justify-center text-white font-bold text-[10px] uppercase">
                     {user.username.slice(0, 2)}
                   </div>
                   <span className="hidden md:inline">{user.username}</span>
@@ -290,7 +294,7 @@ export default function App() {
             ) : (
               <button
                 onClick={openLogin}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white transition-all cursor-pointer shadow-sm shadow-indigo-500/10"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white transition-all cursor-pointer shadow-sm shadow-sky-500/20"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 Sign In
@@ -312,9 +316,11 @@ export default function App() {
         {mobileMenuOpen && (
           <div className="sm:hidden border-t border-[var(--border)] bg-[var(--bg-surface)] px-4 py-3 space-y-2">
             <div className="flex flex-col gap-1">
-              <NavButton label="Home"      targetView="home"     Icon={Home}       view={view} onClick={() => navigate('home')} />
-              <NavButton label="Problems"  targetView="list"     Icon={LayoutList} view={view} onClick={() => navigate('list')} />
-              <NavButton label="Compiler"  targetView="compiler" Icon={Zap}        view={view} onClick={() => navigate('compiler')} />
+              <NavButton label="Home"       targetView="home"       Icon={Home}       view={view} onClick={() => navigate('home')} />
+              <NavButton label="DSA Map"    targetView="patterns"   Icon={Network}    view={view} onClick={() => navigate('patterns')} />
+              <NavButton label="Cheatsheet" targetView="cheatsheet" Icon={FileText}   view={view} onClick={() => navigate('cheatsheet')} />
+              <NavButton label="Problems"   targetView="list"       Icon={LayoutList} view={view} onClick={() => navigate('list')} />
+              <NavButton label="Compiler"   targetView="compiler"   Icon={Zap}        view={view} onClick={() => navigate('compiler')} />
             </div>
             <div className="pt-2 border-t border-[var(--border-subtle)]">
               {user ? (
@@ -362,7 +368,17 @@ export default function App() {
             </button>
           </div>
         )}
-        {view === 'compiler' ? (
+        {!user && (view === 'list' || view === 'problem') ? (
+          <LockedProblemsView onLogin={openLogin} onGetStarted={openGetStarted} />
+        ) : view === 'login' || view === 'register' ? (
+          <AuthPage initialTab={view === 'login' ? 'login' : 'register'} onAuthSuccess={handleAuthSuccess} onBack={() => navigate('home')} dark={dark} />
+        ) : view === 'patterns' ? (
+          <DsaMindMap onSelectPattern={handleSelectPattern} dark={dark} />
+        ) : view === 'pattern-detail' ? (
+          <PatternDetail patternId={selectedPatternId} onBack={() => navigate('patterns')} dark={dark} />
+        ) : view === 'cheatsheet' ? (
+          <DsaCheatsheet dark={dark} />
+        ) : view === 'compiler' ? (
           <CompilerPage dark={dark} />
         ) : view === 'problem' ? (
           <ProblemWorkspace problemId={selectedProblemId} onBack={handleBackToList} dark={dark} />
@@ -377,6 +393,7 @@ export default function App() {
             onLogin={openLogin}
             onNavigate={navigate}
             onOpenSourceClick={() => setDocOpen(true)}
+            dark={dark}
           />
         )}
       </main>
@@ -384,7 +401,7 @@ export default function App() {
       {/* ── Footer ── */}
       <footer className="border-t border-[var(--border)] bg-[var(--bg-surface)] py-4">
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
-          <p>© 2026 ApexJudge — Sandboxed Online Judge</p>
+          <p>© 2026 CodePulse — Sandboxed Online Judge</p>
           <div className="flex gap-4">
             <button 
               onClick={() => setDocOpen(true)} 
@@ -399,14 +416,6 @@ export default function App() {
           </div>
         </div>
       </footer>
-
-      {/* ── Auth Modal ── */}
-      <AuthModal 
-        isOpen={authModalOpen} 
-        onClose={() => setAuthModalOpen(false)} 
-        onAuthSuccess={handleAuthSuccess}
-        initialTab={authModalTab}
-      />
 
       {/* ── Open Source Story Drawer ── */}
       <OpenSourceDoc 

@@ -6,45 +6,45 @@
 
 /* ── CSS custom properties — dual-theme token layer ── */
 :root {
-  /* ── Light mode: Bone base → Floral White surfaces ── */
-  --bg-base:        #D8CFBC;   /* Bone — page background */
-  --bg-surface:     #EDE7DB;   /* mid warm tone — panels  */
-  --bg-elevated:    #FFFBF4;   /* Floral White — cards    */
-  --bg-overlay:     rgba(86,84,73,0.06);
-  --border:         #bfb8a8;   /* slightly darker than Bone */
-  --border-subtle:  #d0c9b8;
-  --text-primary:   #11120D;   /* Smoky Black */
-  --text-secondary: #565449;   /* Olive Drab  */
-  --text-muted:     #8c8779;
-  --accent:         #5b5ef5;
-  --accent-subtle:  rgba(91,94,245,0.10);
-  --accent-hover:   #4f46e5;
+  /* ── Light mode: Warm Cream/Off-white base → Floral White surfaces ── */
+  --bg-base:        #FAF6EE;   /* Light warm cream */
+  --bg-surface:     #F3ECE0;   /* warm cream panels */
+  --bg-elevated:    #FFFFFF;   /* Pure White cards */
+  --bg-overlay:     rgba(15,23,42,0.05);
+  --border:         #E6DFD3;
+  --border-subtle:  #F0EAE0;
+  --text-primary:   #0F172A;   /* Slate/Navy */
+  --text-secondary: #475569;   /* Slate */
+  --text-muted:     #64748B;
+  --accent:         #007FFF;   /* CodePulse Stylish Royal Blue */
+  --accent-subtle:  rgba(0,127,255,0.08);
+  --accent-hover:   #0066CC;
   --success:        #16a34a;
   --error:          #dc2626;
   --warning:        #d97706;
-  --scrollbar-track:#D8CFBC;
-  --scrollbar-thumb:#bfb8a8;
+  --scrollbar-track:#FAF6EE;
+  --scrollbar-thumb:#E6DFD3;
 }
 
 .dark {
-  /* ── Dark mode: Deep Blue base → Black surfaces ── */
-  --bg-base:        #0C2E3D;   /* Dark Blue base — page background */
-  --bg-surface:     #07212c;   /* mid tone — panels                */
-  --bg-elevated:    #000101;   /* Black — cards                    */
-  --bg-overlay:     rgba(0,0,0,0.2);
-  --border:         #186784;   /* Ocean Teal border                */
-  --border-subtle:  #0C2E3D;
-  --text-primary:   #DAC6B6;   /* Warm linen off-white             */
-  --text-secondary: #C0A088;   /* Warm light beige                 */
-  --text-muted:     #9A7C65;   /* Muted warm brown                 */
-  --accent:         #186784;   /* Ocean Teal                       */
-  --accent-subtle:  rgba(24,103,132,0.15);
-  --accent-hover:   #2282a5;
+  /* ── Dark mode: Absolute Pitch Black & Dark Slate (Accent: Gold-Orange) ── */
+  --bg-base:        #000000;   /* Absolute Black */
+  --bg-surface:     #080808;   /* Very dark gray/black */
+  --bg-elevated:    #121212;   /* Sleek elevated dark gray */
+  --bg-overlay:     rgba(0,0,0,0.8);
+  --border:         #1c1c1c;   /* Dark border */
+  --border-subtle:  #0d0d0d;
+  --text-primary:   #FFFFFF;   /* Pure White */
+  --text-secondary: #E5E5E5;   /* Gray text */
+  --text-muted:     #888888;
+  --accent:         #FCA311;   /* Gold/Orange Accent */
+  --accent-subtle:  rgba(252,163,17,0.08);
+  --accent-hover:   #e0900f;
   --success:        #4ade80;
   --error:          #f87171;
-  --warning:        #fbbf24;
-  --scrollbar-track:#07212c;
-  --scrollbar-thumb:#186784;
+  --warning:        #FCA311;
+  --scrollbar-track:#000000;
+  --scrollbar-thumb:#1c1c1c;
 }
 
 /* ── Base resets ── */
@@ -102,7 +102,7 @@ button, select, textarea, input {
   100% { background-position: 0% 50%; }
 }
 .gradient-text {
-  background: linear-gradient(135deg, #818cf8, #6366f1, #22d3ee, #4ade80);
+  background: linear-gradient(135deg, #007FFF, #38BDF8, #0EA5E9, #007FFF);
   background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -112,8 +112,8 @@ button, select, textarea, input {
 
 /* ── Neon glow pulse for accent elements ── */
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 6px rgba(99,102,241,0.3); }
-  50%       { box-shadow: 0 0 16px rgba(99,102,241,0.6); }
+  0%, 100% { box-shadow: 0 0 6px rgba(56,189,248,0.3); }
+  50%       { box-shadow: 0 0 16px rgba(56,189,248,0.6); }
 }
 .glow-pulse { animation: glow-pulse 2.5s ease-in-out infinite; }
 
@@ -160,8 +160,8 @@ button, select, textarea, input {
 /* ── Landing page: hero accent gradient overlay ── */
 .hero-gradient {
   background:
-    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.12) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 40% at 90% 80%, rgba(34,211,238,0.06) 0%, transparent 60%);
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(56,189,248,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 90% 80%, rgba(14,165,233,0.05) 0%, transparent 60%);
 }
 
 /* ── Glassmorphism feature card ── */
@@ -173,8 +173,8 @@ button, select, textarea, input {
 }
 .glass-card:hover {
   transform: translateY(-6px) scale(1.01);
-  box-shadow: 0 20px 60px rgba(99,102,241,0.12), 0 0 0 1px rgba(99,102,241,0.25);
-  border-color: rgba(99,102,241,0.35);
+  box-shadow: 0 20px 60px rgba(56,189,248,0.10), 0 0 0 1px rgba(56,189,248,0.25);
+  border-color: rgba(56,189,248,0.35);
 }
 
 /* ── Horizontal auto-scroll ticker ── */
@@ -236,7 +236,7 @@ button, select, textarea, input {
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(90deg, #6366f1, #22d3ee, #4ade80, #6366f1);
+  background: linear-gradient(90deg, #007FFF, #38BDF8, #0EA5E9, #007FFF);
   background-size: 400% 100%;
   animation: border-rotate 4s linear infinite;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -254,3 +254,57 @@ button, select, textarea, input {
     transform: translateY(0);
   }
 }
+
+/* ── Code Pulse and Access Locked Animations ── */
+@keyframes code-pulse {
+  0%, 100% {
+    opacity: 0.35;
+    text-shadow: 0 0 4px rgba(56, 189, 248, 0.2);
+    color: var(--text-secondary);
+  }
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 12px rgba(56, 189, 248, 0.8), 0 0 20px rgba(14, 165, 233, 0.6);
+    color: #38BDF8;
+  }
+}
+.animate-code-pulse {
+  animation: code-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes lock-heartbeat {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.2), inset 0 0 5px rgba(56, 189, 248, 0.1);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.6), 0 0 40px rgba(14, 165, 233, 0.4), inset 0 0 10px rgba(56, 189, 248, 0.3);
+  }
+}
+.animate-lock-heartbeat {
+  animation: lock-heartbeat 1.8s ease-in-out infinite;
+}
+
+@keyframes code-terminal-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+.scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to bottom, transparent, rgba(56, 189, 248, 0.15), transparent);
+  animation: code-terminal-scan 6s linear infinite;
+  pointer-events: none;
+}
+
+/* ── DSA Mind Map node animations ── */
+@keyframes node-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(56,189,248,0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(56,189,248,0); }
+}
+.node-pulse { animation: node-pulse 2s ease-in-out infinite; }
+
